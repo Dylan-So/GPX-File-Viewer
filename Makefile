@@ -38,6 +38,9 @@ clean:
 xmlExample: $(SRC)libXmlExample.c
 	$(CC) $(CFLAGS) -I$(XML_PATH) $(SRC)libXmlExample.c -lxml2 -o $(BIN)xmlExample
 
+mainTester: parser $(SRC)mainTester.c
+	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) $(BIN)libgpxparser.so $(SRC)mainTester.c -lxml2 -o $(BIN)mainTester
+
 #These are sample targets for the list demo code incldued in the class examples.  They will not be used
 #for A1, but they can help you figure out who to set up a target for your own test main
 
