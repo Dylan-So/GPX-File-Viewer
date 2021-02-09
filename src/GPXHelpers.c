@@ -13,6 +13,8 @@
 #include <string.h>
 #include "GPXHelpers.h"
 
+// FUNCTIONS getWaypointData, getRouteData, getTrackData CONTAINS SAMPLE CODE FROM PROVIDED libXmlExample.c FILE
+// TO PARSE AND RETRIEVE DATA FROM THE XML FILE
 GPXdoc *populateGPX(GPXdoc *doc, xmlNode *root) {
     xmlNode *curNode = NULL;
 
@@ -47,6 +49,7 @@ GPXdoc *populateGPX(GPXdoc *doc, xmlNode *root) {
 Waypoint *getWaypointData(xmlNode *curNode) {
     Waypoint *newWaypoint = (Waypoint *)malloc(sizeof(Waypoint));
 
+    // Initialize all Waypoint variables
     newWaypoint->name=(char *)malloc(sizeof(char));
     newWaypoint->name[0] = '\0';
     newWaypoint->longitude = 0.0;
@@ -69,6 +72,7 @@ Waypoint *getWaypointData(xmlNode *curNode) {
     xmlNode *copy = NULL;
     for (copy = curNode->children; copy != NULL; copy = copy->next) {
         char *nodeName = (char *)copy->name;
+
         // If the node is a name it will copy the data into the appropiate places
         if (strcmp(nodeName, "name") == 0) {
             if (copy->children->content != NULL) {
@@ -142,7 +146,7 @@ Track *getTrackData(xmlNode *curNode) {
     for (copy = curNode->children; copy != NULL; copy = copy->next) {
         char *nodeName = (char *)copy->name;
 
-        /// If the node is a name or rtept, then it will copy the data into the appropiate places
+        // If the node is a name or rtept, then it will copy the data into the appropiate places
         if (strcmp(nodeName, "name") == 0) {
             if (copy->children->content != NULL) {
                 newTrack->name = (char *)realloc(newTrack->name, strlen((char *)copy->children->content) + 1);
@@ -189,4 +193,106 @@ TrackSegment *getSegmentData(xmlNode *curNode) {
     }
 
     return newSegment;
+}
+
+// Gets the number of elements in a list
+int getNumElements(List *list) {
+    if (list != NULL) {
+        int count = 0;
+        ListIterator listIter = createIterator(list);
+        void *data = nextElement(&listIter);
+        while (data != NULL) {
+            count++;
+            data = nextElement(&listIter);
+        }
+        return count;
+    } else {
+        return -1;
+    }
+}
+
+// Gets the number of 'otherData' in list of Waypoints
+int getNumWptList(List *list) {
+    if (list != NULL) {
+        int count = 0;
+        ListIterator listIter = createIterator(list);
+        Waypoint *wpt = (Waypoint *)nextElement(&listIter);
+        while (wpt != NULL) {
+            if (strcmp(wpt->name, "") != 0) {
+                count++;
+            }
+            int wptTemp = getNumElements(wpt->otherData);
+            if (wptTemp != -1) {
+                count += wptTemp;
+            }
+            wpt = (Waypoint *)nextElement(&listIter);
+        }
+        return count;
+    } else {
+        return -1;
+    }
+}
+
+// Gets the number of 'otherData' in list of Routes
+int getNumRteList(List *list) {
+    if (list != NULL) {
+        int count = 0;
+        ListIterator listIter = createIterator(list);
+        Route *rte = (Route *)nextElement(&listIter);
+        while (rte != NULL) {
+
+            // Gets the number of 'otherData' in a Route
+            if (strcmp(rte->name, "") != 0) {
+                count++;
+            }
+            int rteTemp = getNumElements(rte->otherData);
+            if (rteTemp != -1) {
+                count += rteTemp;
+            }
+
+            // Gets the number of 'otherData' in a Route's waypoints
+            int rteptTemp = getNumWptList(rte->waypoints);
+            if (rteptTemp != -1) {
+                count += rteptTemp;
+            }
+            rte = (Route *)nextElement(&listIter);
+        }
+        return count;
+    } else {
+        return -1;
+    }
+}
+
+// Gets number of 'otherData' in a list of Tracks
+int getNumTrkList(List *list) {
+    if (list != NULL) {
+        int count = 0;
+        ListIterator listIter = createIterator(list);
+        Track *trk = (Track *)nextElement(&listIter);
+        while (trk != NULL) {
+            if (strcmp(trk->name, "") != 0) {
+                count++;
+            }
+            // Gets number of 'otherData' in a Track
+            int trkTemp = getNumElements(trk->otherData);
+            if (trkTemp != -1) {
+                count += trkTemp;
+            }
+
+            // Gets number of 'otherData' in a TrackSegment
+            ListIterator trksegIter = createIterator(trk->segments);
+            TrackSegment *trkSeg = (TrackSegment *)nextElement(&trksegIter);
+            while (trkSeg != NULL) {
+                int segTemp = getNumWptList(trkSeg->waypoints);
+                if (segTemp != -1) {
+                    count += segTemp;
+                }
+                trkSeg = (TrackSegment *)nextElement(&trksegIter);
+            }
+            trk = (Track *)nextElement(&listIter);
+        }
+        return count;
+    } else {
+        return -1;
+    }
 }

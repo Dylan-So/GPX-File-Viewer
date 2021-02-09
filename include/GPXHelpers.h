@@ -23,4 +23,12 @@ Track *getTrackData(xmlNode *curNode);
 
 TrackSegment *getSegmentData(xmlNode *curNode);
 
+int getNumElements(List *list);
+
+int getNumWptList(List *list);
+
+int getNumRteList(List *list);
+
+int getNumTrkList(List *list);
+
 #endif
