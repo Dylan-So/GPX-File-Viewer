@@ -88,7 +88,8 @@ GPXdoc *createGPXdoc(char *fileName) {
 
 char *GPXdocToString(GPXdoc *doc) {
 	char *docString = (char *)malloc(1024 * sizeof(char));
-	sprintf(docString, "Namespace: %s\nVersion: %0.1f\nCreator: %s\n\n", doc->namespace, doc->version, doc->creator);
+	int length = 0;
+	length += sprintf(docString + length, "Namespace: %s\nVersion: %0.1f\nCreator: %s\n\n", doc->namespace, doc->version, doc->creator);
 	
 	ListIterator wptIter = createIterator(doc->waypoints);
 	ListIterator rteIter = createIterator(doc->routes);
@@ -97,7 +98,7 @@ char *GPXdocToString(GPXdoc *doc) {
 	Waypoint *wpt = (Waypoint *)nextElement(&wptIter);
 	while (wpt != NULL) {
 		char *temp = waypointToString(wpt);
-		sprintf(docString + strlen(docString), "%s", temp);
+		length += sprintf(docString + length, "%s", temp);
 		free(temp);
 		wpt = (Waypoint *)nextElement(&wptIter);
 	}
@@ -105,7 +106,7 @@ char *GPXdocToString(GPXdoc *doc) {
 	Route *rte = (Route *)nextElement(&rteIter);
 	while (rte != NULL) {
 		char *temp = routeToString(rte);
-		sprintf(docString + strlen(docString), "%s", temp);
+		length += sprintf(docString + length, "%s", temp);
 		free(temp);
 		rte = (Route *)nextElement(&rteIter);
 	}
@@ -113,7 +114,7 @@ char *GPXdocToString(GPXdoc *doc) {
 	Track *trk = (Track *)nextElement(&trkIter);
 	while (trk != NULL) {
 		char *temp = trackToString(trk);
-		sprintf(docString + strlen(docString), "%s", temp);
+		length += sprintf(docString + length, "%s", temp);
 		free(temp);
 		trk = (Track *)nextElement(&trkIter);
 	}
@@ -161,17 +162,18 @@ void deleteWaypoint(void *data) {
 char *waypointToString(void *data) {
 	char *wptString = (char *)malloc(512 * sizeof(char));
 	Waypoint *wpt = (Waypoint *)data;
+	int length = 0;
 	if (wpt != NULL) {
 		if (wpt->name[0] != '\0') {
-			sprintf(wptString, "lat=%f lon=%f\nName=%s\n\n", wpt->latitude, wpt->longitude, wpt->name);
+			length += sprintf(wptString + length, "lat=%f lon=%f\nName=%s\n\n", wpt->latitude, wpt->longitude, wpt->name);
 		} else {
-			sprintf(wptString, "lat=%f lon=%f\n", wpt->latitude, wpt->longitude);
+			length += sprintf(wptString + length, "lat=%f lon=%f\n", wpt->latitude, wpt->longitude);
 		}
 		ListIterator otherIter = createIterator(wpt->otherData);
 		GPXData *gpx = (GPXData *)nextElement(&otherIter);
 		while (gpx != NULL) {
 			char *temp = gpxDataToString(gpx);
-			sprintf(wptString + strlen(wptString), "%s", temp);
+			length += sprintf(wptString + length, "%s", temp);
 			free(temp);
 			gpx = (GPXData *)nextElement(&otherIter);
 		}
@@ -190,20 +192,22 @@ void deleteRoute(void *data) {
 	free(oldRoute->name);
 	freeList(oldRoute->waypoints);
 	freeList(oldRoute->otherData);
+	free(oldRoute);
 }
 
 char *routeToString(void *data) {
 	char *rteString = malloc(512 * sizeof(char));
 	Route *rte = (Route *)data;
+	int length = 0;
 	if (rte != NULL) {
 		if (strcmp(rte->name, "") != 0) {
-			sprintf(rteString, "Name: %s\n", rte->name);
+			length += sprintf(rteString + length, "Name: %s\n", rte->name);
 		}
 		ListIterator rtept = createIterator(rte->waypoints);
 		Waypoint *wpt = (Waypoint *)nextElement(&rtept);
 		while (wpt != NULL) {
 			char *temp = waypointToString(wpt);
-			sprintf(rteString + strlen(rteString), "%s", temp);
+			length += sprintf(rteString +length, "%s", temp);
 			free(temp);
 			wpt = (Waypoint *)nextElement(&rtept);
 		}
@@ -212,11 +216,12 @@ char *routeToString(void *data) {
 		GPXData *gpx = (GPXData *)nextElement(&otherIter);
 		while (gpx != NULL) {
 			char *temp = gpxDataToString(gpx);
-			sprintf(rteString + strlen(rteString), "%s", temp);
+			length += sprintf(rteString + length, "%s", temp);
+			free(temp);
 			gpx = (GPXData *)nextElement(&otherIter);
 		}
 	}
-	sprintf(rteString + strlen(rteString), "\n");
+	//sprintf(rteString + strlen(rteString), "\n");
 	//rteString[strlen(rteString)] = '\0';
 	return rteString;
 }
@@ -236,9 +241,12 @@ char *trackSegmentToString(void *data) {
 	TrackSegment *trkSeg = (TrackSegment *)data;
 	ListIterator wptIter = createIterator(trkSeg->waypoints);
 	Waypoint *wpt = (Waypoint *)nextElement(&wptIter);
+
+	// Prints first element without adding strlen(trksegString) to avoid printing unknown characters
+	int length = 0;
 	while (wpt != NULL) {
 		char *temp = waypointToString(wpt);
-		sprintf(trksegString + strlen(trksegString), "%s", temp);
+		length += sprintf(trksegString + length, "%s", temp);
 		free(temp);
 		wpt = (Waypoint *)nextElement(&wptIter);
 	}
@@ -261,15 +269,16 @@ void deleteTrack(void *data) {
 char *trackToString(void *data) {
 	char *trkString = (char *)malloc(512 * sizeof(char));
 	Track *trk = (Track *)data;
+	int length = 0;
 	if (trk != NULL) {
 		if (strcmp(trk->name, "") != 0) {
-			sprintf(trkString, "Name: %s\n", trk->name);
+			length += sprintf(trkString + length, "Name: %s\n", trk->name);
 		}
 		ListIterator trksegIter = createIterator(trk->segments);
 		TrackSegment *trkseg = (TrackSegment *)nextElement(&trksegIter);
 		while (trkseg != NULL) {
 			char *temp = trackSegmentToString(trkseg);
-			sprintf(trkString + strlen(trkString), "%s", temp);
+			length += sprintf(trkString + length, "%s", temp);
 			free(temp);
 			trkseg = (TrackSegment *)nextElement(&trksegIter);
 		}
@@ -278,7 +287,7 @@ char *trackToString(void *data) {
 		GPXData *gpx = (GPXData *)nextElement(&otherIter);
 		while (gpx != NULL) {
 			char *temp = gpxDataToString(gpx);
-			sprintf(trkString + strlen(trkString), "%s", temp);
+			length += sprintf(trkString + length, "%s", temp);
 			free(temp);
 			gpx = (GPXData *)nextElement(&otherIter);
 		}
