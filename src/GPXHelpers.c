@@ -13,7 +13,7 @@
 #include <string.h>
 #include "GPXHelpers.h"
 
-// FUNCTIONS getWaypointData, getRouteData, getTrackData CONTAINS SAMPLE CODE FROM PROVIDED libXmlExample.c FILE
+// FUNCTIONS getWaypointData, getRouteData, getTrackData CONTAINS SAMPLE CODE FROM PROVIDED the libXmlExample.c FILE
 // TO PARSE AND RETRIEVE DATA FROM THE XML FILE
 GPXdoc *populateGPX(GPXdoc *doc, xmlNode *root) {
     xmlNode *curNode = NULL;
@@ -99,6 +99,7 @@ Waypoint *getWaypointData(xmlNode *curNode) {
 Route *getRouteData(xmlNode *curNode) {
     Route *newRoute = (Route *)malloc(sizeof(Route));
 
+    // Initialize all variables in a route
     newRoute->name = (char *)malloc(sizeof(char));
     newRoute->name[0] = '\0';
     newRoute->waypoints = initializeList(&waypointToString, &deleteWaypoint, &compareWaypoints);
@@ -136,6 +137,7 @@ Route *getRouteData(xmlNode *curNode) {
 Track *getTrackData(xmlNode *curNode) {
     Track *newTrack = (Track *)malloc(sizeof(Track));
 
+    // Initialize all variables in a Track
     newTrack->name = (char *)malloc(sizeof(char));
     newTrack->name[0] = '\0';
     newTrack->segments = initializeList(&trackSegmentToString, &deleteTrackSegment, &compareTrackSegments);
@@ -176,6 +178,7 @@ Track *getTrackData(xmlNode *curNode) {
 
 TrackSegment *getSegmentData(xmlNode *curNode) {
     TrackSegment *newSegment = (TrackSegment *)malloc(sizeof(TrackSegment));
+
     newSegment->waypoints = initializeList(&waypointToString, &deleteWaypoint, &compareWaypoints);
 
     xmlNode *copy = NULL;
@@ -195,7 +198,6 @@ TrackSegment *getSegmentData(xmlNode *curNode) {
     return newSegment;
 }
 
-// Gets the number of elements in a list
 int getNumElements(List *list) {
     if (list != NULL) {
         int count = 0;
@@ -211,13 +213,13 @@ int getNumElements(List *list) {
     }
 }
 
-// Gets the number of 'otherData' in list of Waypoints
 int getNumWptList(List *list) {
     if (list != NULL) {
         int count = 0;
         ListIterator listIter = createIterator(list);
         Waypoint *wpt = (Waypoint *)nextElement(&listIter);
         while (wpt != NULL) {
+            // Get the number of 'otherData' in a Waypoint
             if (strcmp(wpt->name, "") != 0) {
                 count++;
             }
@@ -233,15 +235,13 @@ int getNumWptList(List *list) {
     }
 }
 
-// Gets the number of 'otherData' in list of Routes
 int getNumRteList(List *list) {
     if (list != NULL) {
         int count = 0;
         ListIterator listIter = createIterator(list);
         Route *rte = (Route *)nextElement(&listIter);
         while (rte != NULL) {
-
-            // Gets the number of 'otherData' in a Route
+            // Get number of 'otherData' in a Waypoint
             if (strcmp(rte->name, "") != 0) {
                 count++;
             }
@@ -250,7 +250,7 @@ int getNumRteList(List *list) {
                 count += rteTemp;
             }
 
-            // Gets the number of 'otherData' in a Route's waypoints
+            // Get the number of 'otherData' in a Route's waypoints
             int rteptTemp = getNumWptList(rte->waypoints);
             if (rteptTemp != -1) {
                 count += rteptTemp;
@@ -263,23 +263,22 @@ int getNumRteList(List *list) {
     }
 }
 
-// Gets number of 'otherData' in a list of Tracks
 int getNumTrkList(List *list) {
     if (list != NULL) {
         int count = 0;
         ListIterator listIter = createIterator(list);
         Track *trk = (Track *)nextElement(&listIter);
         while (trk != NULL) {
+            // Get number of 'otherData' in a Track
             if (strcmp(trk->name, "") != 0) {
                 count++;
             }
-            // Gets number of 'otherData' in a Track
             int trkTemp = getNumElements(trk->otherData);
             if (trkTemp != -1) {
                 count += trkTemp;
             }
 
-            // Gets number of 'otherData' in a TrackSegment
+            // Get number of 'otherData' in a TrackSegment
             ListIterator trksegIter = createIterator(trk->segments);
             TrackSegment *trkSeg = (TrackSegment *)nextElement(&trksegIter);
             while (trkSeg != NULL) {
