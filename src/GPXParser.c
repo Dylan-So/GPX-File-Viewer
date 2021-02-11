@@ -26,7 +26,6 @@ GPXdoc *createGPXdoc(char *fileName) {
 	newDoc->routes = initializeList(&routeToString, &deleteRoute, &compareRoutes);
 	newDoc->tracks = initializeList(&trackToString, &deleteTrack, &compareTracks);
 
-	// The code below contains sample code from the provided libXmlExample.c file
 	LIBXML_TEST_VERSION
 
 	xmlDoc *doc = NULL;
@@ -303,139 +302,33 @@ int compareTracks(const void *first, const void *second) {
 }
 
 int getNumWaypoints(const GPXdoc *doc) {
-	if (doc != NULL) {
-		int count = 0;
-		ListIterator wptIter = createIterator(doc->waypoints);
-		Waypoint *wpt = (Waypoint *)nextElement(&wptIter);
-		while (wpt != NULL) {
-			count++;
-			wpt = (Waypoint *)nextElement(&wptIter);
-		}
-		return count;
-	} else {
-		return -1;
-	}
+	return 0;
 }
 
 int getNumRoutes(const GPXdoc* doc) {
-	if (doc != NULL) {
-		int count = 0;
-		ListIterator rteIter = createIterator(doc->routes);
-		Route *rte = (Route *)nextElement(&rteIter);
-		while (rte != NULL) {
-			count++;
-			rte = (Route *)nextElement(&rteIter);
-		}
-		return count;
-	} else {
-		return -1;
-	}
+	return 0;
 }
 
 int getNumTracks(const GPXdoc* doc) {
-	if (doc != NULL) {
-		int count = 0;
-		ListIterator trkIter = createIterator(doc->tracks);
-		Track *trk = (Track *)nextElement(&trkIter);
-		while (trk != NULL) {
-			count++;
-			trk = (Track *)nextElement(&trkIter);
-		}
-		return count;
-	} else {
-		return -1;
-	}
+	return 0;
 }
 
 int getNumSegments(const GPXdoc* doc) {
-	if (doc != NULL) {
-		int count = 0;
-		ListIterator trkIter = createIterator(doc->tracks);
-		Track *trk = (Track *)nextElement(&trkIter);
-		while (trk != NULL) {
-			ListIterator segIter = createIterator(trk->segments);
-			TrackSegment *trkSeg = (TrackSegment *)nextElement(&segIter);
-			while (trkSeg != NULL) {
-				count++;
-				trkSeg = (TrackSegment *)nextElement(&segIter);
-			}
-			trk = (Track *)nextElement(&trkIter);
-		}
-		return count;
-	} else {
-		return -1;
-	}
+	return 0;
 }
 
 int getNumGPXData(const GPXdoc* doc) {
-	if (doc != NULL) {
-		int count = 0;
-		int temp = 0;
-
-		temp = getNumWptList(doc->waypoints);
-		if (temp != -1) {
-			count += temp;
-		}
-
-		temp = getNumRteList(doc->routes);
-		if (temp != -1) {
-			count += temp;
-		}
-
-		temp = getNumTrkList(doc->tracks);
-		if (temp != -1) {
-			count += temp;
-		}
-		return count;
-	} else {
-		return -1;
-	}
+	return 0;
 }
 
-Waypoint *getWaypoint(const GPXdoc* doc, char* name) {
-	if (doc != NULL) {
-		ListIterator wptIter = createIterator(doc->waypoints);
-		Waypoint *wpt = (Waypoint *)nextElement(&wptIter);
-		while (wpt != NULL) {
-			if (strcmp(wpt->name, name) == 0) {
-				return wpt;
-			}
-			wpt = (Waypoint *)nextElement(&wptIter);
-		}
-		return NULL;
-	} else {
-		return NULL;
-	}
+Waypoint* getWaypoint(const GPXdoc* doc, char* name) {
+	return NULL;
 }
 
-Route *getRoute(const GPXdoc* doc, char* name) {
-	if (doc != NULL) {
-		ListIterator rteIter = createIterator(doc->routes);
-		Route *rte = (Route *)nextElement(&rteIter);
-		while (rte != NULL) {
-			if (strcmp(rte->name, name) == 0) {
-				return rte;
-			}
-			rte = (Route *)nextElement(&rteIter);
-		}
-		return NULL;
-	} else {
-		return NULL;
-	}
+Track* getTrack(const GPXdoc* doc, char* name) {
+	return NULL;
 }
 
-Track *getTrack(const GPXdoc* doc, char* name) {
-	if (doc != NULL) {
-		ListIterator trkIter = createIterator(doc->tracks);
-		Track *trk = (Track *)nextElement(&trkIter);
-		while (trk != NULL) {
-			if (strcmp(trk->name, name) == 0) {
-				return trk;
-			}
-			trk = (Track *)nextElement(&trkIter);
-		}
-		return NULL;
-	} else {
-		return NULL;
-	}
+Route* getRoute(const GPXdoc* doc, char* name) {
+	return NULL;
 }
