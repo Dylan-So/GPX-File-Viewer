@@ -88,7 +88,7 @@ int getNumWptList(List *list);
 int getNumRteList(List *list);
 
 /**
- * @brief Gets number of 'otherData' in a list of Tracks
+ * @brief Gets number of 'otherData' in a list of Tracks.
  *
  * @param list The list
  *
@@ -96,4 +96,19 @@ int getNumRteList(List *list);
  */
 int getNumTrkList(List *list);
 
+/**
+ * @brief Checks if the xmlDoc provided is valid.
+ *
+ * @param doc 			The xmlDoc
+ * @param gpxSchemaFile The gpx schema file
+ *
+ * @return -1 if invalid, 1 if valid
+ */
+int validateXmlTree(xmlDoc* doc, char* gpxSchemaFile);
+
+xmlDoc* GPXdocToTree(GPXdoc* gpxDoc);
+
+void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace);
+void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace);
+void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace);
 #endif

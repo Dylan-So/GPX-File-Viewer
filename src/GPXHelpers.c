@@ -1,5 +1,5 @@
 /*-----------------------------------
- *| Assignment 1                    |
+ *| Assignment 2                    |
  *|                                 |
  *| AUTHOR: Dylan So                |
  *| Student ID: 1091854             |
@@ -11,10 +11,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libxml/xmlschemastypes.h>
 #include "GPXHelpers.h"
+
 
 // FUNCTIONS getWaypointData, getRouteData, getTrackData CONTAINS SAMPLE CODE FROM PROVIDED the libXmlExample.c FILE
 // TO PARSE AND RETRIEVE DATA FROM THE XML FILE
+
+// A1
 GPXdoc *populateGPX(GPXdoc *doc, xmlNode *root) {
     xmlNode *curNode = NULL;
 
@@ -293,5 +297,179 @@ int getNumTrkList(List *list) {
         return count;
     } else {
         return -1;
+    }
+}
+
+int validateXmlTree(xmlDoc* doc, char* gpxSchemaFile) {
+    int invalid = 1;
+    xmlSchema *schema = NULL;
+    xmlSchemaParserCtxt* schemaParser = NULL;
+    xmlSchemaValidCtxt* validCtxt = NULL;
+
+    LIBXML_TEST_VERSION
+
+    schemaParser = xmlSchemaNewParserCtxt(gpxSchemaFile);
+    xmlSchemaSetParserErrors(schemaParser, (xmlSchemaValidityErrorFunc) fprintf, (xmlSchemaValidityWarningFunc) fprintf, stderr);
+    schema = xmlSchemaParse(schemaParser);
+    xmlSchemaFreeParserCtxt(schemaParser);
+
+    if (doc == NULL) {
+        fprintf(stderr, "validateXmlTree: Provided xmlDoc is not valid\n");
+        if(schema != NULL) {
+            xmlSchemaFree(schema);
+        }
+        xmlSchemaCleanupTypes();
+        xmlCleanupParser();
+        return -1;
+    } else {
+        validCtxt = xmlSchemaNewValidCtxt(schema);
+        xmlSchemaSetValidErrors(validCtxt, (xmlSchemaValidityErrorFunc) fprintf, (xmlSchemaValidityWarningFunc) fprintf, stderr);
+        invalid = xmlSchemaValidateDoc(validCtxt, doc);
+
+        if (invalid > 0) {
+            xmlFreeDoc(doc);
+            fprintf(stderr, "validateXmlTree: Provided xmlDoc is not valid\n");
+            return -1;
+        } else if (invalid != 0) {
+            xmlFreeDoc(doc);
+            printf("Test\n");
+            fprintf(stderr, "validateXmlTree: Validation process failed\n");
+            return -1;
+        }
+        xmlSchemaFreeValidCtxt(validCtxt);
+    }
+    if(schema != NULL) {
+        xmlSchemaFree(schema);
+    }
+
+    xmlSchemaCleanupTypes();
+    xmlCleanupParser();
+
+    return 1;
+}
+
+xmlDoc* GPXdocToTree(GPXdoc* gpxDoc) {
+    xmlDoc* doc = NULL;
+    xmlNode* root = NULL;
+
+    LIBXML_TEST_VERSION;
+
+    // Create the xmlDoc with version specified in GPXdoc
+    char *version = malloc(10 * sizeof(char));
+    sprintf(version, "%0.1f", gpxDoc->version);
+    doc = xmlNewDoc(BAD_CAST "1.0");
+
+    // Create and set the namespace for root node
+    root = xmlNewNode(NULL, BAD_CAST "gpx");
+    xmlNs* namespace = xmlNewNs(root, BAD_CAST gpxDoc->namespace, NULL);
+    xmlSetNs(root, namespace);
+    xmlNewProp(root, BAD_CAST "version", BAD_CAST version);
+    xmlNewProp(root, BAD_CAST "creator", BAD_CAST gpxDoc->creator);
+
+    addWptNodes(gpxDoc->waypoints, root, "wpt", namespace);
+    addRteNodes(gpxDoc->routes, root, namespace);
+    addTrkNodes(gpxDoc->tracks, root, namespace);
+
+    xmlDocSetRootElement(doc, root);
+
+    return doc;
+}
+
+void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace) {
+    ListIterator wptIter = createIterator(waypoints);
+    Waypoint *wpt = (Waypoint *)nextElement(&wptIter);
+    while (wpt != NULL) {
+        // Adds the wpt node to the root node, along with its lat and lon
+        xmlNode* root_child = xmlNewChild(root, namespace, BAD_CAST name, NULL);
+        char *lat = malloc(15 * sizeof(char));
+        char *lon = malloc(15 * sizeof(char));
+
+        sprintf(lat, "%0.6f", wpt->latitude);
+        sprintf(lon, "%0.6f", wpt->longitude);
+
+        xmlNewProp(root_child, BAD_CAST "lat", BAD_CAST lat);
+        xmlNewProp(root_child, BAD_CAST "lon", BAD_CAST lon);
+
+        // Adds the name of a waypoint
+        if (wpt->name[0] != '\0') {
+            xmlNode* wptName = xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST wpt->name);
+            xmlAddChild(root_child, wptName);
+        }
+
+        // Adds any other data included in a waypoint
+        ListIterator othIter = createIterator(wpt->otherData);
+        GPXData* oth = (GPXData *)nextElement(&othIter);
+        while (oth != NULL) {
+            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            xmlAddChild(root_child, otherData);
+            oth = (GPXData *)nextElement(&othIter);
+        }
+
+        xmlAddChild(root, root_child);
+
+        wpt = (Waypoint *)nextElement(&wptIter);
+    }
+}
+
+void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace) {
+    ListIterator rteIter = createIterator(routes);
+    Route *rte = (Route *)nextElement(&rteIter);
+    while (rte != NULL) {
+        // Adds the rte node to the root
+        xmlNode* root_child = xmlNewChild(root, namespace, BAD_CAST "rte", NULL);
+
+        // Adds the name of a route
+        xmlNode* rteName = xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST rte->name);
+        xmlAddChild(root_child, rteName);
+
+        // Adds any other data included in a waypoint
+        ListIterator othIter = createIterator(rte->otherData);
+        GPXData* oth = (GPXData *)nextElement(&othIter);
+        while (oth != NULL) {
+            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            xmlAddChild(root_child, otherData);
+            oth = (GPXData *)nextElement(&othIter);
+        }
+
+        addWptNodes(rte->waypoints, root_child, "rtept", namespace);
+
+        xmlAddChild(root, root_child);
+
+        rte = (Route *)nextElement(&rteIter);
+    }
+}
+
+void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace) {
+    ListIterator trkIter = createIterator(tracks);
+    Track *trk = (Track *)nextElement(&trkIter);
+    while (trk != NULL) {
+        // Adds the trk node to the root
+        xmlNode* root_child = xmlNewChild(root, namespace, BAD_CAST "trk", NULL);
+
+        // Adds the name of a track
+        xmlNode* trkName = xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST trk->name);
+        xmlAddChild(root_child, trkName);
+
+        // Adds any other data included in a track
+        ListIterator othIter = createIterator(trk->otherData);
+        GPXData* oth = (GPXData *)nextElement(&othIter);
+        while (oth != NULL) {
+            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            xmlAddChild(root_child, otherData);
+            oth = (GPXData *)nextElement(&othIter);
+        }
+
+        // Adds the track segments to the trk node
+        xmlNode* trkseg_child = xmlNewChild(root_child, namespace, BAD_CAST "trkseg", NULL);
+        ListIterator trksegIter = createIterator(trk->segments);
+        TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
+        while (trkseg != NULL) {
+            addWptNodes(trkseg->waypoints, trkseg_child, "trkpt", namespace);
+            trkseg = (TrackSegment *)nextElement(&trksegIter);
+        }
+
+        xmlAddChild(root, root_child);
+
+        trk = (Track *)nextElement(&trkIter);
     }
 }

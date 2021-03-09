@@ -1,5 +1,5 @@
 /*-----------------------------------
- *| Assignment 1					|
+ *| Assignment 2					|
  *|									|
  *| AUTHOR: Dylan So 				|
  *| Student ID: 1091854				|
@@ -12,10 +12,12 @@
 #include <stdlib.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <libxml/xmlschemastypes.h>
 #include "GPXParser.h"
 #include "GPXHelpers.h"
 #include "LinkedListAPI.h"
 
+// A1
 GPXdoc *createGPXdoc(char *fileName) {
 	GPXdoc *newDoc = (GPXdoc *)malloc(sizeof(GPXdoc));
 
@@ -92,6 +94,10 @@ GPXdoc *createGPXdoc(char *fileName) {
 }
 
 char *GPXdocToString(GPXdoc *doc) {
+	if (doc == NULL) {
+		return "";
+	}
+
 	char *docString = (char *)malloc(1024 * sizeof(char));
 	int length = 0;
 	length += sprintf(docString + length, "Namespace: %s\nVersion: %0.1f\nCreator: %s\n\n", doc->namespace, doc->version, doc->creator);
@@ -458,5 +464,111 @@ Track *getTrack(const GPXdoc* doc, char* name) {
 		return NULL;
 	} else {
 		return NULL;
+	}
+}
+
+// A2
+GPXdoc* createValidGPXdoc(char* fileName, char* gpxSchemaFile) {
+    if (fileName == NULL || gpxSchemaFile == NULL || fileName[0] == '\0' || gpxSchemaFile[0] == '\0') {
+    	return NULL;
+    }
+
+    GPXdoc *newDoc = (GPXdoc *)malloc(sizeof(GPXdoc));
+
+	// Initialize all the variables in a GPXdoc
+	strcpy(newDoc->namespace, "namespace");
+	newDoc->version = 0.0;
+	newDoc->creator = (char *)malloc(sizeof(char));
+	newDoc->creator[0] = '\0';
+	newDoc->waypoints = initializeList(&waypointToString, &deleteWaypoint, &compareWaypoints);
+	newDoc->routes = initializeList(&routeToString, &deleteRoute, &compareRoutes);
+	newDoc->tracks = initializeList(&trackToString, &deleteTrack, &compareTracks);
+
+	// The code below contains sample code from the provided libXmlExample.c file
+	LIBXML_TEST_VERSION
+
+	xmlDoc *doc = NULL;
+	xmlNode* root = NULL;
+
+	// Checks if provided gpx file is valid
+
+	doc = xmlReadFile(fileName, NULL, 32);
+
+	if (validateXmlTree(doc, gpxSchemaFile) == -1) {
+		deleteGPXdoc(newDoc);
+		xmlFreeDoc(doc);
+		xmlCleanupParser();
+		return NULL;
+	}
+
+	root = xmlDocGetRootElement(doc);
+
+	// Gets the namespace of the xml file
+	if (strcmp((char *)root->name, "gpx") == 0) {
+		if (strcmp((char *)root->ns->href, "") != 0) {
+        	strcpy(newDoc->namespace, (char *)root->ns->href);
+    	} else {
+    		deleteGPXdoc(newDoc);
+			xmlFreeDoc(doc);
+			return NULL;
+    	}
+    }
+
+    // Gets the version and creator of the xml file
+    xmlAttr *attr;
+    for (attr = root->properties; attr != NULL; attr = attr->next) {
+        char *attrName = (char *)attr->name;
+        char *cont = (char *)(attr->children->content);
+
+        if (strcmp(attrName, "version") == 0) {
+            newDoc->version = atof(cont);
+        } else if (strcmp(attrName, "creator") == 0) {
+        	if (strcmp(cont, "") != 0) {
+	            newDoc->creator = (char *)realloc(newDoc->creator, strlen(cont) + 1);
+	            strcpy(newDoc->creator, cont);
+	        } else {
+	        	deleteGPXdoc(newDoc);
+				xmlFreeDoc(doc);
+				return NULL;
+	        }
+        }
+    }
+
+    // Populates the GPXdoc with the waypoints, routes, and tracks in the xml file
+	newDoc = populateGPX(newDoc, root->children);
+
+	if (newDoc == NULL) {
+		deleteGPXdoc(newDoc);
+		xmlFreeDoc(doc);
+		xmlCleanupParser();
+		return NULL;
+	}
+
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+
+	return newDoc;
+}
+
+bool writeGPXdoc(GPXdoc* doc, char* fileName) {
+	if (doc == NULL || fileName == NULL || fileName[0] == '\0') {
+		return false;
+	}
+	xmlDoc* tree = GPXdocToTree(doc);
+	xmlSaveFormatFileEnc(fileName, tree, NULL, 1);
+	return true;
+}
+
+bool validateGPXDoc(GPXdoc* doc, char* gpxSchemaFile) {
+	if (doc == NULL || gpxSchemaFile == NULL || gpxSchemaFile[0] == '\0') {
+    	return false;
+	}
+
+	xmlDoc* tree = GPXdocToTree(doc);
+	int invalid = validateXmlTree(tree, gpxSchemaFile);
+	if (invalid == -1) {
+		return false;
+	} else {
+		return true;
 	}
 }
