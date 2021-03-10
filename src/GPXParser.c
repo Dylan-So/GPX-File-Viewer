@@ -733,6 +733,10 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 	ListIterator rteIter = createIterator(doc->routes);
 	Route* rte = (Route *)nextElement(&rteIter);
 	while (rte != NULL) {
+		// Gets the first route with at least 1 waypoint
+		while (rte->waypoints == NULL || getNumElements(rte->waypoints) == 0) {
+			rte = (Route *)nextElement(&rteIter);
+		}
 		Waypoint *firstPt = (Waypoint *)getFromFront(rte->waypoints);
 		Waypoint *lastPt = (Waypoint *)getFromBack(rte->waypoints);
 		float sourceDist = getPointDistance(&sourcePt, firstPt);
@@ -743,6 +747,7 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		rte = (Route *)nextElement(&rteIter);
 	}
 	if (getNumElements(routes) < 1) {
+		freeList(tracks);
 		return NULL;
 	} else {
 		return routes;
@@ -763,13 +768,17 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 	while (trk != NULL) {
 		ListIterator trksegIter = createIterator(trk->segments);
 		TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
-		if (trkseg->waypoints != NULL) {
-			firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
+		// Gets the first track segment with at least 1 waypoint
+		while (trkseg->waypoints == NULL || getNumElements(trkseg->waypoints) == 0) {
+			trkseg = (TrackSegment *)nextElement(&trksegIter);
 		}
+		firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
 		lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
 		trkseg = (TrackSegment *)nextElement(&trksegIter);
 		while (trkseg != NULL) {
-			lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
+			if (trkseg->waypoints != NULL && getNumElements(trkseg->waypoints) != 0) {
+				lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
+			}
 			trkseg = (TrackSegment *)nextElement(&trksegIter);
 		}
 		float sourceDist = getPointDistance(firstPt, &sourcePt);
@@ -780,25 +789,108 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		trk = (Track *)nextElement(&trkIter);
 	}
 	if (getNumElements(tracks) < 1) {
+		freeList(tracks);
 		return NULL;
 	} else {
 		return tracks;
 	}
 }
 
-char* routeListToJSON(const List *list) {
-	return "";
-}
-
-char* trackListToJSON(const List *list) {
-	return "";
-}
-
 char* routeToJSON(const Route *rt) {
-	return "";
+	if (rt == NULL) {
+		return "{}";
+	}
+
+	char *name = rt->name;
+	if (name[0] == '\0') {
+		name = "None";
+	}
+	int numPoints = getNumElements(rt->waypoints);
+	float routeLen = round10(getRouteLen(rt));
+	size_t stringLen = 0;
+	char loopBool[6] = "";
+	if (isLoopRoute(rt, 10)) {
+		strcpy(loopBool, "true");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
+	} else {
+		strcpy(loopBool, "false");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
+	}
+	char *rteJSON = malloc((stringLen + 1) * sizeof(char));
+	sprintf(rteJSON, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
+	return rteJSON;
 }
 
 char* trackToJSON(const Track *tr) {
+	if (tr == NULL) {
+		return "{}";
+	}
+
+	char* name = tr->name;
+	if (name[0] == '\0') {
+		name = "None";
+	}
+	float trackLen = round10(getTrackLen(tr));
+	size_t stringLen = 0;
+	char loopBool[6];
+	if (isLoopTrack(tr, 10)) {
+		strcpy(loopBool, "true");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
+	} else {
+		strcpy(loopBool, "false");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
+	}
+	char* trkJSON = malloc((stringLen + 1) * sizeof(char));
+	sprintf(trkJSON, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
+	return trkJSON;
+}
+
+char* routeListToJSON(const List *list) {
+	if (list == NULL) {
+		printf("Test NULL\n");
+		return "[]";
+	}
+
+	ListIterator rteIter = createIterator((List *)list);
+	Route* rte = (Route *)nextElement(&rteIter);
+	// Get the length of the string to malloc
+	size_t stringLen = snprintf(NULL, 0, "[");
+	// Adds 1 more character for the closing bracket ']' if list is null 
+	if (rte == NULL) {
+		stringLen += 1;
+	}
+	while (rte != NULL) {
+		char* rteJson = routeToJSON(rte);
+		stringLen += snprintf(NULL, 0, "%s", rteJson);
+		free(rteJson);
+		rte = (Route *)nextElement(&rteIter);
+		if (rte == NULL) {
+			stringLen += snprintf(NULL, 0, "]");
+		} else {
+			stringLen += snprintf(NULL, 0, ",");
+		}
+	}
+	char *rteListJSON = malloc((stringLen + 1) * sizeof(char));
+	// Reset iterator and construct the string
+	ListIterator rteIter2 = createIterator((List *)list);
+	rte = (Route *)nextElement(&rteIter2);
+	int length = 0;
+	length += sprintf(rteListJSON + length, "[");
+	while (rte != NULL) {
+		char* rteJson = routeToJSON(rte);
+		length += sprintf(rteListJSON + length, "%s", rteJson);
+		free(rteJson);
+		rte = (Route *)nextElement(&rteIter2);
+		if (rte == NULL) {
+			length += sprintf(rteListJSON + length, "]");
+		} else {
+			length += sprintf(rteListJSON + length, ",");
+		}
+	}
+	return rteListJSON;
+}
+
+char* trackListToJSON(const List *list) {
 	return "";
 }
 

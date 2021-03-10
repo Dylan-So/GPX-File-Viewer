@@ -79,20 +79,24 @@ Waypoint *getWaypointData(xmlNode *curNode) {
 
         // If the node is a name it will copy the data into the appropiate places
         if (strcmp(nodeName, "name") == 0) {
-            if (copy->children->content != NULL) {
-                newWaypoint->name = (char *)realloc(newWaypoint->name, strlen((char *)copy->children->content) + 1);
-                strcpy(newWaypoint->name, (char *)copy->children->content);
+            if (copy->children != NULL) {
+                xmlChar* name = xmlNodeGetContent(copy->children);
+                if (name != NULL) {
+                    newWaypoint->name = (char *)realloc(newWaypoint->name, strlen((char *)name) + 1);
+                    strcpy(newWaypoint->name, (char *)name);
+                }
+                xmlFree(name);
             }
         } else {
             if (copy->children != NULL) {
-                GPXData *newData = (GPXData *)malloc(sizeof(GPXData) + strlen((char *)copy->children->content) + 1);
-                if (copy->children->content[0] == '\0') {
-                    deleteGpxData(newData);
-                    return NULL;
+                xmlChar* value = xmlNodeGetContent(copy->children);
+                if (value != NULL) {
+                    GPXData *newData = (GPXData *)malloc(sizeof(GPXData) + strlen((char *)copy->children->content) + 1);
+                    strcpy(newData->name, nodeName);
+                    strcpy(newData->value, (char *)value);
+                    insertBack(newWaypoint->otherData, (void *)newData);
                 }
-                strcpy(newData->name, nodeName);
-                strcpy(newData->value, (char *)copy->children->content);
-                insertBack(newWaypoint->otherData, (void *)newData);
+                xmlFree(value);
             }
         }
     }
@@ -116,11 +120,13 @@ Route *getRouteData(xmlNode *curNode) {
 
         /// If the node is a name or rtept, then it will copy the data into the appropiate places
         if (strcmp(nodeName, "name") == 0) {
-            if (copy->children->content != NULL) {
-                newRoute->name = (char *)realloc(newRoute->name, strlen((char *)copy->children->content) + 1);
-                strcpy(newRoute->name, (char *)copy->children->content);
-            } else {
-                newRoute->name[0] = '\0';
+            if (copy->children != NULL) {
+                xmlChar *name = xmlNodeGetContent(copy->children);
+                if (name != NULL) {
+                    newRoute->name = (char *)realloc(newRoute->name, strlen((char *)name) + 1);
+                    strcpy(newRoute->name, (char *)name);
+                }
+                xmlFree(name);
             }
         } else if (strcmp(nodeName, "rtept") == 0) {
             Waypoint *newWaypoint = getWaypointData(copy);
@@ -128,9 +134,13 @@ Route *getRouteData(xmlNode *curNode) {
         } else {
             if (copy->children != NULL) {
                 GPXData *newData = (GPXData *)malloc(sizeof(GPXData) + strlen((char *)copy->children->content) + 1);
-                strcpy(newData->name, nodeName);
-                strcpy(newData->value, (char *)copy->children->content);
-                insertBack(newRoute->otherData, (void *)newData);
+                xmlChar* value = xmlNodeGetContent(copy->children);
+                if (value != NULL) {
+                    strcpy(newData->name, nodeName);
+                    strcpy(newData->value, (char *)value);
+                    insertBack(newRoute->otherData, (void *)newData);
+                }
+                xmlFree(value);
             }
         }
     }
@@ -154,25 +164,27 @@ Track *getTrackData(xmlNode *curNode) {
 
         // If the node is a name or rtept, then it will copy the data into the appropiate places
         if (strcmp(nodeName, "name") == 0) {
-            if (copy->children->content != NULL) {
-                newTrack->name = (char *)realloc(newTrack->name, strlen((char *)copy->children->content) + 1);
-                strcpy(newTrack->name, (char *)copy->children->content);
-            } else {
-                newTrack->name[0] = '\0';
+            if (copy->children != NULL) {
+                xmlChar* name = xmlNodeGetContent(copy->children);
+                if (name != NULL) {
+                    newTrack->name = (char *)realloc(newTrack->name, strlen((char *)name) + 1);
+                    strcpy(newTrack->name, (char *)name);
+                }
+                xmlFree(name);
             }
         } else if (strcmp(nodeName, "trkseg") == 0) {
             TrackSegment *newSegment = getSegmentData(copy);
             insertBack(newTrack->segments, (void *)newSegment);
         } else {
             if (copy->children != NULL) {
-                GPXData *newData = (GPXData *)malloc(sizeof(GPXData) + strlen((char *)copy->children->content) + 1);
-                if (copy->children->content[0] == '\0') {
-                    deleteGpxData(newData);
-                    return NULL;
+                xmlChar* value = xmlNodeGetContent(copy->children);
+                if (value != NULL) {
+                    GPXData *newData = (GPXData *)malloc(sizeof(GPXData) + strlen((char *)copy->children->content) + 1);
+                    strcpy(newData->name, nodeName);
+                    strcpy(newData->value, (char *)value);
+                    insertBack(newTrack->otherData, (void *)newData);
                 }
-                strcpy(newData->name, nodeName);
-                strcpy(newData->value, (char *)copy->children->content);
-                insertBack(newTrack->otherData, (void *)newData);
+                xmlFree(value);
             }
         }
     }
