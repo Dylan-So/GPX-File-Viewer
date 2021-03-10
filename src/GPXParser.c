@@ -13,6 +13,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlschemastypes.h>
+#include <math.h>
 #include "GPXParser.h"
 #include "GPXHelpers.h"
 #include "LinkedListAPI.h"
@@ -492,7 +493,7 @@ GPXdoc* createValidGPXdoc(char* fileName, char* gpxSchemaFile) {
 
 	// Checks if provided gpx file is valid
 
-	doc = xmlReadFile(fileName, NULL, 32);
+	doc = xmlReadFile(fileName, NULL, 0);
 
 	if (validateXmlTree(doc, gpxSchemaFile) == -1) {
 		deleteGPXdoc(newDoc);
@@ -556,6 +557,8 @@ bool writeGPXdoc(GPXdoc* doc, char* fileName) {
 	}
 	xmlDoc* tree = GPXdocToTree(doc);
 	xmlSaveFormatFileEnc(fileName, tree, NULL, 1);
+	xmlFreeDoc(tree);
+    xmlCleanupParser();
 	return true;
 }
 
@@ -567,8 +570,258 @@ bool validateGPXDoc(GPXdoc* doc, char* gpxSchemaFile) {
 	xmlDoc* tree = GPXdocToTree(doc);
 	int invalid = validateXmlTree(tree, gpxSchemaFile);
 	if (invalid == -1) {
+		xmlFreeDoc(tree);
 		return false;
 	} else {
+		xmlFreeDoc(tree);
 		return true;
 	}
+}
+
+float round10(float len) {
+	float remainder = fmod(len, 10.0);
+	if (remainder == 0) {
+		return len;
+	} else if (remainder >= 5) {
+		return (len + (10 - remainder));
+	} else {
+		return (len - remainder);
+	}
+}
+
+float getRouteLen(const Route *rt) {
+	if (rt == NULL) {
+		return 0;
+	}
+
+	float totalLength = 0.0;
+	ListIterator rteptIter = createIterator(rt->waypoints);
+	Waypoint* rtept = (Waypoint *)nextElement(&rteptIter);
+	Waypoint* prev = NULL;
+	while (rtept != NULL) {
+		prev = rtept;
+		rtept = (Waypoint *)nextElement(&rteptIter);
+		totalLength += getPointDistance(prev, rtept);
+	}
+	return totalLength;
+}
+
+float getTrackLen(const Track *tr) {
+	if (tr == NULL) {
+		return 0;
+	}
+
+	float totalLength = 0.0;
+	ListIterator trksegIter = createIterator(tr->segments);
+	TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
+	Waypoint* prev = NULL;
+	while (trkseg != NULL) {
+		ListIterator trkptIter = createIterator(trkseg->waypoints);
+		Waypoint* trkpt = (Waypoint *)nextElement(&trkptIter);
+		if (prev != NULL) {
+			totalLength += getPointDistance(trkpt, prev);
+		}
+		while (trkpt != NULL) {
+			prev = trkpt;
+			trkpt = (Waypoint *)nextElement(&trkptIter);
+			totalLength += getPointDistance(prev, trkpt);
+		}
+		trkseg = (TrackSegment *)nextElement(&trksegIter);
+	}
+	return totalLength;
+}
+
+int numRoutesWithLength(const GPXdoc* doc, float len, float delta) {
+	if (doc == NULL || len < 0 || delta < 0) {
+		return 0;
+	}
+
+	int rteCount = 0;
+	ListIterator rteIter = createIterator(doc->routes);
+	Route* rte = (Route *)nextElement(&rteIter);
+	while (rte != NULL) {
+		float routeLen = getRouteLen(rte);
+		if (getDistanceDiff(routeLen, len) <= (delta)) {
+			rteCount++;
+		}
+		rte = (Route *)nextElement(&rteIter);
+	}
+	return rteCount;
+}
+
+int numTracksWithLength(const GPXdoc* doc, float len, float delta) {
+	if (doc == NULL || len < 0 || delta < 0) {
+		return 0;
+	}
+
+	int trkCount = 0;
+	ListIterator trkIter = createIterator(doc->tracks);
+	Track* trk = (Track *)nextElement(&trkIter);
+	while (trk != NULL) {
+		float trackLen = getTrackLen(trk);
+		if (getDistanceDiff(trackLen, len) <= (delta)) {
+			trkCount++;
+		}
+		trk = (Track *)nextElement(&trkIter);
+	}
+	return trkCount;
+}
+
+bool isLoopRoute(const Route* route, float delta) {
+	if (route == NULL) {
+		return false;
+	}
+
+	if (delta < 0 || getNumElements(route->waypoints) < 4) {
+		return false;
+	}
+
+	Waypoint *firstPt = (Waypoint *)getFromFront(route->waypoints);
+	Waypoint *lastPt = (Waypoint *)getFromBack(route->waypoints);
+
+	float ptDistance = getPointDistance(firstPt, lastPt);
+	if (ptDistance <= delta) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool isLoopTrack(const Track *tr, float delta) {
+	if (tr == NULL) {
+		return false;
+	}
+
+	ListIterator tempIter = createIterator(tr->segments);
+	TrackSegment *tempSeg = (TrackSegment *)nextElement(&tempIter);
+
+	int totalPts = 0;
+	while (tempSeg != NULL) {
+		totalPts += getNumElements(tempSeg->waypoints);
+		tempSeg = (TrackSegment *)nextElement(&tempIter);
+	}
+
+	if (delta < 0 || totalPts < 4) {
+		return false;
+	}
+
+	ListIterator trksegIter = createIterator(tr->segments);
+	TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
+	TrackSegment* lastSeg = NULL;
+	Waypoint* firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
+
+	while (trkseg != NULL) {
+		lastSeg = trkseg;
+		trkseg = (TrackSegment *)nextElement(&trksegIter);
+	}
+	Waypoint *lastPt = (Waypoint *)getFromBack(lastSeg->waypoints);
+	float ptDistance = getPointDistance(firstPt, lastPt);
+	if (ptDistance <= delta) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+	if (doc == NULL) {
+		return NULL;
+	}
+	List* routes = initializeList(&routeToString, &deleteRoute, &compareRoutes);
+	Waypoint sourcePt = {"", sourceLong, sourceLat, NULL};
+	Waypoint destPt = {"", destLong, destLat, NULL};
+	ListIterator rteIter = createIterator(doc->routes);
+	Route* rte = (Route *)nextElement(&rteIter);
+	while (rte != NULL) {
+		Waypoint *firstPt = (Waypoint *)getFromFront(rte->waypoints);
+		Waypoint *lastPt = (Waypoint *)getFromBack(rte->waypoints);
+		float sourceDist = getPointDistance(&sourcePt, firstPt);
+		float destDist = getPointDistance(&destPt, lastPt);
+		if (sourceDist <= delta && destDist <= delta) {
+			insertBack(routes, rte);
+		}
+		rte = (Route *)nextElement(&rteIter);
+	}
+	if (getNumElements(routes) < 1) {
+		return NULL;
+	} else {
+		return routes;
+	}
+}
+
+List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+	if (doc == NULL) {
+		return NULL;
+	}
+	List* tracks = initializeList(&trackToString, &deleteTrack, &compareTracks);
+	Waypoint sourcePt = {"", sourceLong, sourceLat, NULL};
+	Waypoint destPt = {"", destLong, destLat, NULL};
+	ListIterator trkIter = createIterator(doc->tracks);
+	Track* trk = (Track *)nextElement(&trkIter);
+	Waypoint *firstPt = NULL;
+	Waypoint *lastPt = NULL;
+	while (trk != NULL) {
+		ListIterator trksegIter = createIterator(trk->segments);
+		TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
+		if (trkseg->waypoints != NULL) {
+			firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
+		}
+		lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
+		trkseg = (TrackSegment *)nextElement(&trksegIter);
+		while (trkseg != NULL) {
+			lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
+			trkseg = (TrackSegment *)nextElement(&trksegIter);
+		}
+		float sourceDist = getPointDistance(firstPt, &sourcePt);
+		float destDist = getPointDistance(lastPt, &destPt);
+		if (sourceDist <= delta && destDist <= delta) {
+			insertBack(tracks, trk);
+		}
+		trk = (Track *)nextElement(&trkIter);
+	}
+	if (getNumElements(tracks) < 1) {
+		return NULL;
+	} else {
+		return tracks;
+	}
+}
+
+char* routeListToJSON(const List *list) {
+	return "";
+}
+
+char* trackListToJSON(const List *list) {
+	return "";
+}
+
+char* routeToJSON(const Route *rt) {
+	return "";
+}
+
+char* trackToJSON(const Track *tr) {
+	return "";
+}
+
+char* GPXtoJSON(const GPXdoc* gpx) {
+	return "";
+}
+
+void addWaypoint(Route *rt, Waypoint *pt) {
+
+}
+
+void addRoute(GPXdoc* doc, Route* rt) {
+
+}
+
+GPXdoc* JSONtoGPX(const char* gpxString) {
+	return NULL;
+}
+
+Waypoint* JSONtoWaypoint(const char* gpxString) {
+	return NULL;
+}
+
+Route* JSONtoRoute(const char* gpxString) {
+	return NULL;
 }

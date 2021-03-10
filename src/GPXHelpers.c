@@ -213,7 +213,7 @@ int getNumElements(List *list) {
         }
         return count;
     } else {
-        return -1;
+        return 0;
     }
 }
 
@@ -300,26 +300,28 @@ int getNumTrkList(List *list) {
     }
 }
 
+// This function references code from: https://knol2share.blogspot.com/2009/05/validate-xml-against-xsd-in-c.html
+// *Example given in the assignment description*
 int validateXmlTree(xmlDoc* doc, char* gpxSchemaFile) {
     int invalid = 1;
     xmlSchema *schema = NULL;
     xmlSchemaParserCtxt* schemaParser = NULL;
     xmlSchemaValidCtxt* validCtxt = NULL;
 
-    LIBXML_TEST_VERSION
-
     schemaParser = xmlSchemaNewParserCtxt(gpxSchemaFile);
     xmlSchemaSetParserErrors(schemaParser, (xmlSchemaValidityErrorFunc) fprintf, (xmlSchemaValidityWarningFunc) fprintf, stderr);
     schema = xmlSchemaParse(schemaParser);
     xmlSchemaFreeParserCtxt(schemaParser);
+    
+    LIBXML_TEST_VERSION
 
     if (doc == NULL) {
         fprintf(stderr, "validateXmlTree: Provided xmlDoc is not valid\n");
+        xmlSchemaFreeValidCtxt(validCtxt);
         if(schema != NULL) {
             xmlSchemaFree(schema);
         }
         xmlSchemaCleanupTypes();
-        xmlCleanupParser();
         return -1;
     } else {
         validCtxt = xmlSchemaNewValidCtxt(schema);
@@ -327,13 +329,20 @@ int validateXmlTree(xmlDoc* doc, char* gpxSchemaFile) {
         invalid = xmlSchemaValidateDoc(validCtxt, doc);
 
         if (invalid > 0) {
-            xmlFreeDoc(doc);
             fprintf(stderr, "validateXmlTree: Provided xmlDoc is not valid\n");
+            xmlSchemaFreeValidCtxt(validCtxt);
+            if(schema != NULL) {
+                xmlSchemaFree(schema);
+            }
+            xmlSchemaCleanupTypes();
             return -1;
         } else if (invalid != 0) {
-            xmlFreeDoc(doc);
-            printf("Test\n");
             fprintf(stderr, "validateXmlTree: Validation process failed\n");
+            xmlSchemaFreeValidCtxt(validCtxt);
+            if(schema != NULL) {
+                xmlSchemaFree(schema);
+            }
+            xmlSchemaCleanupTypes();
             return -1;
         }
         xmlSchemaFreeValidCtxt(validCtxt);
@@ -355,7 +364,7 @@ xmlDoc* GPXdocToTree(GPXdoc* gpxDoc) {
     LIBXML_TEST_VERSION;
 
     // Create the xmlDoc with version specified in GPXdoc
-    char *version = malloc(10 * sizeof(char));
+    char version[10];
     sprintf(version, "%0.1f", gpxDoc->version);
     doc = xmlNewDoc(BAD_CAST "1.0");
 
@@ -371,7 +380,7 @@ xmlDoc* GPXdocToTree(GPXdoc* gpxDoc) {
     addTrkNodes(gpxDoc->tracks, root, namespace);
 
     xmlDocSetRootElement(doc, root);
-
+    xmlCleanupParser();
     return doc;
 }
 
@@ -381,8 +390,8 @@ void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace) {
     while (wpt != NULL) {
         // Adds the wpt node to the root node, along with its lat and lon
         xmlNode* root_child = xmlNewChild(root, namespace, BAD_CAST name, NULL);
-        char *lat = malloc(15 * sizeof(char));
-        char *lon = malloc(15 * sizeof(char));
+        char lat[15];
+        char lon[15];
 
         sprintf(lat, "%0.6f", wpt->latitude);
         sprintf(lon, "%0.6f", wpt->longitude);
@@ -392,16 +401,14 @@ void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace) {
 
         // Adds the name of a waypoint
         if (wpt->name[0] != '\0') {
-            xmlNode* wptName = xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST wpt->name);
-            xmlAddChild(root_child, wptName);
+            xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST wpt->name);
         }
 
         // Adds any other data included in a waypoint
         ListIterator othIter = createIterator(wpt->otherData);
         GPXData* oth = (GPXData *)nextElement(&othIter);
         while (oth != NULL) {
-            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
-            xmlAddChild(root_child, otherData);
+            xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
             oth = (GPXData *)nextElement(&othIter);
         }
 
@@ -426,8 +433,7 @@ void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace) {
         ListIterator othIter = createIterator(rte->otherData);
         GPXData* oth = (GPXData *)nextElement(&othIter);
         while (oth != NULL) {
-            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
-            xmlAddChild(root_child, otherData);
+            xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
             oth = (GPXData *)nextElement(&othIter);
         }
 
@@ -454,22 +460,46 @@ void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace) {
         ListIterator othIter = createIterator(trk->otherData);
         GPXData* oth = (GPXData *)nextElement(&othIter);
         while (oth != NULL) {
-            xmlNode* otherData = xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
-            xmlAddChild(root_child, otherData);
+            xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
             oth = (GPXData *)nextElement(&othIter);
         }
 
         // Adds the track segments to the trk node
-        xmlNode* trkseg_child = xmlNewChild(root_child, namespace, BAD_CAST "trkseg", NULL);
         ListIterator trksegIter = createIterator(trk->segments);
         TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
         while (trkseg != NULL) {
+            xmlNode* trkseg_child = xmlNewChild(root_child, namespace, BAD_CAST "trkseg", NULL);
             addWptNodes(trkseg->waypoints, trkseg_child, "trkpt", namespace);
             trkseg = (TrackSegment *)nextElement(&trksegIter);
         }
-
         xmlAddChild(root, root_child);
 
         trk = (Track *)nextElement(&trkIter);
+    }
+}
+
+// This function uses the Haversine formula
+// Reference: https://www.movable-type.co.uk/scripts/latlong.html
+float getPointDistance(Waypoint *wp1, Waypoint *wp2) {
+    if (wp1 == NULL || wp2 == NULL) {
+        return 0.0;
+    }
+
+    float earthRadius = 6371000;
+    float wp1LatRad = wp1->latitude * (M_PI / 180.0);
+    float wp2LatRad = wp2->latitude * (M_PI / 180.0);
+    float latDiff = (wp2->latitude - wp1->latitude) * (M_PI / 180.0);
+    float lonDiff = (wp2->longitude - wp1->longitude) * (M_PI / 180.0);
+    float a = (sin(latDiff / 2) * sin(latDiff / 2)) + (cos(wp1LatRad) * cos(wp2LatRad)) * (sin(lonDiff / 2) * sin(lonDiff / 2));
+    float c = 2 * atan2(sqrt(a), sqrt(1-a));
+    float distance = earthRadius * c;
+    return distance;
+}
+
+float getDistanceDiff(float routeLen, float len) {
+    if ((len - routeLen) < 0) {
+        return ((len - routeLen) * -1);
+    } else {
+        return (len - routeLen);
     }
 }

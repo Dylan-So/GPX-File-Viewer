@@ -1,5 +1,5 @@
 /*-----------------------------------
- *| Assignment 1					|
+ *| Assignment 2					|
  *|									|
  *| AUTHOR: Dylan So 				|
  *| Student ID: 1091854				|
@@ -111,4 +111,6 @@ xmlDoc* GPXdocToTree(GPXdoc* gpxDoc);
 void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace);
 void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace);
 void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace);
+float getPointDistance(Waypoint *wp1, Waypoint *wp2);
+float getDistanceDiff(float routeLen, float len);
 #endif
