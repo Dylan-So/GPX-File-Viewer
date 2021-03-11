@@ -119,7 +119,7 @@ xmlDoc* GPXdocToTree(GPXdoc* gpxDoc);
  * 
  * @param waypoints     The waypoint list
  * @param root          The node to add waypoint xmlNodes to
- * @param name          The name of the waypoint
+ * @param name          The name of the node (wpt, rtept, trkpt)
  * @param namespace     The namespace for the xml file
  */
 void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace);
