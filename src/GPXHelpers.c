@@ -411,16 +411,28 @@ void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace) {
         xmlNewProp(root_child, BAD_CAST "lat", BAD_CAST lat);
         xmlNewProp(root_child, BAD_CAST "lon", BAD_CAST lon);
 
+        // Adds the elements in proper order to ensure the xml file is valid
+        ListIterator othIter = createIterator(wpt->otherData);
+        GPXData* oth = (GPXData *)nextElement(&othIter);
+        while (oth != NULL) {
+            if (strcmp(oth->name, "ele") == 0 || strcmp(oth->name, "time") == 0 || strcmp(oth->name, "magvar") == 0 || strcmp(oth->name, "geoidheight") == 0) {
+                xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            }
+            oth = (GPXData *)nextElement(&othIter);
+        }
+
         // Adds the name of a waypoint
         if (wpt->name[0] != '\0') {
             xmlNewChild(root_child, namespace, BAD_CAST "name", BAD_CAST wpt->name);
         }
 
-        // Adds any other data included in a waypoint
-        ListIterator othIter = createIterator(wpt->otherData);
-        GPXData* oth = (GPXData *)nextElement(&othIter);
+        // Resets iterator and adds any other data included in a waypoint
+        othIter = createIterator(wpt->otherData);
+        oth = (GPXData *)nextElement(&othIter);
         while (oth != NULL) {
-            xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            if (strcmp(oth->name, "ele") != 0 && strcmp(oth->name, "time") != 0 && strcmp(oth->name, "magvar") != 0 && strcmp(oth->name, "geoidheight") != 0) {
+                xmlNewChild(root_child, namespace, BAD_CAST oth->name, BAD_CAST oth->value);
+            }
             oth = (GPXData *)nextElement(&othIter);
         }
 
