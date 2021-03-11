@@ -495,6 +495,7 @@ GPXdoc* createValidGPXdoc(char* fileName, char* gpxSchemaFile) {
 
 	doc = xmlReadFile(fileName, NULL, 0);
 
+	// Validates the xmlDoc before parsing the rest of the doc
 	if (validateXmlTree(doc, gpxSchemaFile) == -1) {
 		deleteGPXdoc(newDoc);
 		xmlFreeDoc(doc);
@@ -556,6 +557,8 @@ bool writeGPXdoc(GPXdoc* doc, char* fileName) {
 		return false;
 	}
 	xmlDoc* tree = GPXdocToTree(doc);
+	// Saves the GPXdoc as an xml file
+	// Reference: http://www.xmlsoft.org/examples/tree2.c
 	xmlSaveFormatFileEnc(fileName, tree, "UTF-8", 1);
 	xmlFreeDoc(tree);
     xmlCleanupParser();
@@ -567,6 +570,8 @@ bool validateGPXDoc(GPXdoc* doc, char* gpxSchemaFile) {
     	return false;
 	}
 
+	// Validates the GPX doc using similar code from example given in assignment description
+	// Reference: https://knol2share.blogspot.com/2009/05/validate-xml-against-xsd-in-c.html
 	xmlDoc* tree = GPXdocToTree(doc);
 	int invalid = validateXmlTree(tree, gpxSchemaFile);
 	if (invalid == -1) {
@@ -580,6 +585,7 @@ bool validateGPXDoc(GPXdoc* doc, char* gpxSchemaFile) {
 
 float round10(float len) {
 	float remainder = fmod(len, 10.0);
+	// Gets the remainder of the length when divided by 10, if greater than 4, round up, else round down
 	if (remainder == 0) {
 		return len;
 	} else if (remainder >= 5) {
@@ -598,6 +604,7 @@ float getRouteLen(const Route *rt) {
 	ListIterator rteptIter = createIterator(rt->waypoints);
 	Waypoint* rtept = (Waypoint *)nextElement(&rteptIter);
 	Waypoint* prev = NULL;
+	// Gets the length of the route by adding distance between all points (using Haversine Formula)
 	while (rtept != NULL) {
 		prev = rtept;
 		rtept = (Waypoint *)nextElement(&rteptIter);
@@ -615,6 +622,8 @@ float getTrackLen(const Track *tr) {
 	ListIterator trksegIter = createIterator(tr->segments);
 	TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
 	Waypoint* prev = NULL;
+	// Gets the length of the track by adding distance between all points and track segments
+	// Uses Haversine Formula
 	while (trkseg != NULL) {
 		ListIterator trkptIter = createIterator(trkseg->waypoints);
 		Waypoint* trkpt = (Waypoint *)nextElement(&trkptIter);
@@ -672,13 +681,16 @@ bool isLoopRoute(const Route* route, float delta) {
 		return false;
 	}
 
+	// If delta is negative or there are less than 4 waypoints then a loop is not possible
 	if (delta < 0 || getNumElements(route->waypoints) < 4) {
 		return false;
 	}
 
+	// Gets the first and last points of the route
 	Waypoint *firstPt = (Waypoint *)getFromFront(route->waypoints);
 	Waypoint *lastPt = (Waypoint *)getFromBack(route->waypoints);
 
+	// Calculate the distance of the 2 points and determines if the route is a loop
 	float ptDistance = getPointDistance(firstPt, lastPt);
 	if (ptDistance <= delta) {
 		return true;

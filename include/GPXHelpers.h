@@ -106,12 +106,63 @@ int getNumTrkList(List *list);
  */
 int validateXmlTree(xmlDoc* doc, char* gpxSchemaFile);
 
+/**
+ * @brief Generates an xmlDoc from a GPXdoc struct
+ * 
+ * @param gpxDoc    A pointer to a GPXdoc struct
+ * @return xmlDoc   A pointer to the xmlDoc generated
+ */
 xmlDoc* GPXdocToTree(GPXdoc* gpxDoc);
 
+/**
+ * @brief Adds waypoints from the waypoint list in xml format to the provided xmlNode
+ * 
+ * @param waypoints     The waypoint list
+ * @param root          The node to add waypoint xmlNodes to
+ * @param name          The name of the waypoint
+ * @param namespace     The namespace for the xml file
+ */
 void addWptNodes(List* waypoints, xmlNode* root, char *name, xmlNs* namespace);
+
+/**
+ * @brief Adds routes from the route list in xml format to the provided xmlNode
+ * 
+ * @param routes        The route list
+ * @param root          The node to add route xmlNodes to
+ * @param namespace     The namespace for the xml file
+ */
 void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace);
+
+/**
+ * @brief Adds tracks from the track list in xml format to the provided xmlNode
+ * 
+ * @param tracks        The track list
+ * @param root          The node to add track xmlNodes to
+ * @param namespace     The namespace for the xml file
+ */
 void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace);
+
+/**
+ * @brief Get the distnace between 2 points using the Haversine Formula. Reference: https://www.movable-type.co.uk/scripts/latlong.html
+ * 
+ * @param wp1       The first waypoint
+ * @param wp2       The second waypoint
+ * @return float    The distance as a float
+ */
 float getPointDistance(Waypoint *wp1, Waypoint *wp2);
+
+/**
+ * @brief Calculates the difference and returns the absolute value
+ * 
+ * @param routeLen      The first float
+ * @param len           The second float
+ * @return float        The absolute value of the distance
+ */
 float getDistanceDiff(float routeLen, float len);
+
+/**
+ * @brief A dummy delete function for creating a list in getRoutesBetween() and getTracksBetween()
+ * 
+ */
 void deleteNothing(void *);
 #endif
