@@ -701,6 +701,7 @@ bool isLoopTrack(const Track *tr, float delta) {
 		tempSeg = (TrackSegment *)nextElement(&tempIter);
 	}
 
+	// If delta is negative or there are less than 4 points then a loop is not possible
 	if (delta < 0 || totalPts < 4) {
 		return false;
 	}
@@ -708,10 +709,23 @@ bool isLoopTrack(const Track *tr, float delta) {
 	ListIterator trksegIter = createIterator(tr->segments);
 	TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
 	TrackSegment* lastSeg = NULL;
+	// Gets the first point of the first track segment with at least 1 point
 	Waypoint* firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
+	while (getNumElements(trkseg->waypoints) == 0) {
+		trkseg = (TrackSegment *)nextElement(&trksegIter);
+		if (trkseg == NULL) {
+			break;
+		}
+	}
+	if (trkseg != NULL) {
+		firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
+	}
 
 	while (trkseg != NULL) {
-		lastSeg = trkseg;
+		// Make sure that the track segments has waypoints
+		if (getNumElements(trkseg->waypoints) > 0) {
+			lastSeg = trkseg;
+		}
 		trkseg = (TrackSegment *)nextElement(&trksegIter);
 	}
 	Waypoint *lastPt = (Waypoint *)getFromBack(lastSeg->waypoints);
@@ -733,9 +747,10 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 	ListIterator rteIter = createIterator(doc->routes);
 	Route* rte = (Route *)nextElement(&rteIter);
 	while (rte != NULL) {
-		// Gets the first route with at least 1 waypoint
+		// Gets the first and last waypoints
 		Waypoint *firstPt = (Waypoint *)getFromFront(rte->waypoints);
 		Waypoint *lastPt = (Waypoint *)getFromBack(rte->waypoints);
+		// Calculates the distance between first point and the source and last point and the destination
 		float sourceDist = getPointDistance(&sourcePt, firstPt);
 		float destDist = getPointDistance(&destPt, lastPt);
 		if (sourceDist <= delta && destDist <= delta) {
@@ -744,6 +759,7 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		rte = (Route *)nextElement(&rteIter);
 	}
 	if (getNumElements(routes) < 1) {
+		// If there are no routes between then free list and return
 		freeList(routes);
 		return NULL;
 	} else {
@@ -772,6 +788,7 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
 		lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
 		trkseg = (TrackSegment *)nextElement(&trksegIter);
+		// Loop to get the last valid point of the last valid track segment
 		while (trkseg != NULL) {
 			if (trkseg->waypoints != NULL && getNumElements(trkseg->waypoints) != 0) {
 				lastPt = (Waypoint *)getFromBack(trkseg->waypoints);
@@ -786,6 +803,7 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		trk = (Track *)nextElement(&trkIter);
 	}
 	if (getNumElements(tracks) < 1) {
+		// If there are no tracks between then free the list and return
 		freeList(tracks);
 		return NULL;
 	} else {
@@ -806,6 +824,7 @@ char* routeToJSON(const Route *rt) {
 	float routeLen = round10(getRouteLen(rt));
 	size_t stringLen = 0;
 	char loopBool[6] = "";
+	// Calculate length of string according to whether the track is a loop or not
 	if (isLoopRoute(rt, 10)) {
 		strcpy(loopBool, "true");
 		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
@@ -813,6 +832,7 @@ char* routeToJSON(const Route *rt) {
 		strcpy(loopBool, "false");
 		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
 	}
+	// Allocate enough memory and construct the string
 	char *rteJSON = malloc((stringLen + 1) * sizeof(char));
 	sprintf(rteJSON, "{\"name\":\"%s\",\"numPoints\":%d,\"len\":%0.1f,\"loop\":%s}", name, numPoints, routeLen, loopBool);
 	return rteJSON;
@@ -830,6 +850,7 @@ char* trackToJSON(const Track *tr) {
 	float trackLen = round10(getTrackLen(tr));
 	size_t stringLen = 0;
 	char loopBool[6];
+	// Calculate length of string according to whether the track is a loop or not
 	if (isLoopTrack(tr, 10)) {
 		strcpy(loopBool, "true");
 		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
@@ -837,6 +858,7 @@ char* trackToJSON(const Track *tr) {
 		strcpy(loopBool, "false");
 		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
 	}
+	// Allocate enough memory and construct the string
 	char* trkJSON = malloc((stringLen + 1) * sizeof(char));
 	sprintf(trkJSON, "{\"name\":\"%s\",\"len\":%0.1f,\"loop\":%s}", name, trackLen, loopBool);
 	return trkJSON;
@@ -855,6 +877,7 @@ char* routeListToJSON(const List *list) {
 	if (rte == NULL) {
 		stringLen += 1;
 	}
+	// First loop is responsible for calculating the amount of memory to allocate
 	while (rte != NULL) {
 		char* rteJson = routeToJSON(rte);
 		stringLen += snprintf(NULL, 0, "%s", rteJson);
@@ -872,6 +895,7 @@ char* routeListToJSON(const List *list) {
 	rte = (Route *)nextElement(&rteIter);
 	int length = 0;
 	length += sprintf(rteListJSON + length, "[");
+	// Second loop is responsible for constructing the string itself, using the routeToJSON() function
 	while (rte != NULL) {
 		char* rteJson = routeToJSON(rte);
 		length += sprintf(rteListJSON + length, "%s", rteJson);
@@ -892,12 +916,12 @@ char* trackListToJSON(const List *list) {
 
 	ListIterator trkIter = createIterator((List *)list);
 	Track* trk = (Track *)nextElement(&trkIter);
-	// Get the length of the string to malloc
 	size_t stringLen = snprintf(NULL, 0, "[");
 	// Adds 1 more character for the closing bracket ']' if list is null 
 	if (trk == NULL) {
 		stringLen += 1;
 	}
+	// First loop is responsible for calculating the amount of memory to allocate
 	while (trk != NULL) {
 		char* trkJson = trackToJSON(trk);
 		stringLen += snprintf(NULL, 0, "%s", trkJson);
@@ -909,6 +933,7 @@ char* trackListToJSON(const List *list) {
 			stringLen += snprintf(NULL, 0, ",");
 		}
 	}
+	// Second loop is responsible for constructing the string itself, using the trackToJSON() function
 	char *trkListJSON = malloc((stringLen + 1) * sizeof(char));
 	// Reset iterator and construct the string
 	trkIter = createIterator((List *)list);
@@ -933,8 +958,10 @@ char* GPXtoJSON(const GPXdoc* gpx) {
 		return "{}";
 	}
 
+	// Gets the number of characters needed to allocate memory for
 	size_t stringLength = snprintf(NULL, 0, "{\"version\":%0.1f,\"creator\":\"%s\",\"numWaypoints\":%d,\"numRoutes\":%d,\"numTracks\":%d}",
 									gpx->version, gpx->creator, getNumWaypoints(gpx), getNumRoutes(gpx), getNumTracks(gpx));
+	// Allocate and construct string with correct JSON formatting
 	char* gpxJson = malloc((stringLength + 1) * sizeof(char));
 	sprintf(gpxJson, "{\"version\":%0.1f,\"creator\":\"%s\",\"numWaypoints\":%d,\"numRoutes\":%d,\"numTracks\":%d}",
 						gpx->version, gpx->creator, getNumWaypoints(gpx), getNumRoutes(gpx), getNumTracks(gpx));
@@ -975,7 +1002,6 @@ GPXdoc* JSONtoGPX(const char* gpxString) {
 
 	char creator[1024];
 	sscanf(gpxString, "{\"version\":%lf,\"creator\":\"%[^\"]\"}", &newDoc->version, creator);
-	printf("CREATOR: %s\n", creator);
 	newDoc->creator = (char *)realloc(newDoc->creator, strlen(creator) + 1);
 	strcpy(newDoc->creator, creator);
 	return newDoc;
