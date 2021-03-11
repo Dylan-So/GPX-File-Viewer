@@ -556,7 +556,7 @@ bool writeGPXdoc(GPXdoc* doc, char* fileName) {
 		return false;
 	}
 	xmlDoc* tree = GPXdocToTree(doc);
-	xmlSaveFormatFileEnc(fileName, tree, NULL, 1);
+	xmlSaveFormatFileEnc(fileName, tree, "UTF-8", 1);
 	xmlFreeDoc(tree);
     xmlCleanupParser();
 	return true;
@@ -727,16 +727,13 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 	if (doc == NULL) {
 		return NULL;
 	}
-	List* routes = initializeList(&routeToString, &deleteRoute, &compareRoutes);
+	List* routes = initializeList(&routeToString, &deleteNothing, &compareRoutes);
 	Waypoint sourcePt = {"", sourceLong, sourceLat, NULL};
 	Waypoint destPt = {"", destLong, destLat, NULL};
 	ListIterator rteIter = createIterator(doc->routes);
 	Route* rte = (Route *)nextElement(&rteIter);
 	while (rte != NULL) {
 		// Gets the first route with at least 1 waypoint
-		while (rte->waypoints == NULL || getNumElements(rte->waypoints) == 0) {
-			rte = (Route *)nextElement(&rteIter);
-		}
 		Waypoint *firstPt = (Waypoint *)getFromFront(rte->waypoints);
 		Waypoint *lastPt = (Waypoint *)getFromBack(rte->waypoints);
 		float sourceDist = getPointDistance(&sourcePt, firstPt);
@@ -747,7 +744,7 @@ List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		rte = (Route *)nextElement(&rteIter);
 	}
 	if (getNumElements(routes) < 1) {
-		freeList(tracks);
+		freeList(routes);
 		return NULL;
 	} else {
 		return routes;
@@ -758,7 +755,7 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 	if (doc == NULL) {
 		return NULL;
 	}
-	List* tracks = initializeList(&trackToString, &deleteTrack, &compareTracks);
+	List* tracks = initializeList(&trackToString, &deleteNothing, &compareTracks);
 	Waypoint sourcePt = {"", sourceLong, sourceLat, NULL};
 	Waypoint destPt = {"", destLong, destLat, NULL};
 	ListIterator trkIter = createIterator(doc->tracks);
@@ -769,7 +766,7 @@ List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, flo
 		ListIterator trksegIter = createIterator(trk->segments);
 		TrackSegment* trkseg = (TrackSegment *)nextElement(&trksegIter);
 		// Gets the first track segment with at least 1 waypoint
-		while (trkseg->waypoints == NULL || getNumElements(trkseg->waypoints) == 0) {
+		while (getNumElements(trkseg->waypoints) == 0) {
 			trkseg = (TrackSegment *)nextElement(&trksegIter);
 		}
 		firstPt = (Waypoint *)getFromFront(trkseg->waypoints);
@@ -847,7 +844,6 @@ char* trackToJSON(const Track *tr) {
 
 char* routeListToJSON(const List *list) {
 	if (list == NULL) {
-		printf("Test NULL\n");
 		return "[]";
 	}
 
@@ -872,48 +868,149 @@ char* routeListToJSON(const List *list) {
 	}
 	char *rteListJSON = malloc((stringLen + 1) * sizeof(char));
 	// Reset iterator and construct the string
-	ListIterator rteIter2 = createIterator((List *)list);
-	rte = (Route *)nextElement(&rteIter2);
+	rteIter = createIterator((List *)list);
+	rte = (Route *)nextElement(&rteIter);
 	int length = 0;
 	length += sprintf(rteListJSON + length, "[");
 	while (rte != NULL) {
 		char* rteJson = routeToJSON(rte);
 		length += sprintf(rteListJSON + length, "%s", rteJson);
 		free(rteJson);
-		rte = (Route *)nextElement(&rteIter2);
-		if (rte == NULL) {
-			length += sprintf(rteListJSON + length, "]");
-		} else {
+		rte = (Route *)nextElement(&rteIter);
+		if (rte != NULL) {
 			length += sprintf(rteListJSON + length, ",");
 		}
 	}
+	length += sprintf(rteListJSON + length, "]");
 	return rteListJSON;
 }
 
 char* trackListToJSON(const List *list) {
-	return "";
+	if (list == NULL) {
+		return "[]";
+	}
+
+	ListIterator trkIter = createIterator((List *)list);
+	Track* trk = (Track *)nextElement(&trkIter);
+	// Get the length of the string to malloc
+	size_t stringLen = snprintf(NULL, 0, "[");
+	// Adds 1 more character for the closing bracket ']' if list is null 
+	if (trk == NULL) {
+		stringLen += 1;
+	}
+	while (trk != NULL) {
+		char* trkJson = trackToJSON(trk);
+		stringLen += snprintf(NULL, 0, "%s", trkJson);
+		free(trkJson);
+		trk = (Track *)nextElement(&trkIter);
+		if (trk == NULL) {
+			stringLen += snprintf(NULL, 0, "]");
+		} else {
+			stringLen += snprintf(NULL, 0, ",");
+		}
+	}
+	char *trkListJSON = malloc((stringLen + 1) * sizeof(char));
+	// Reset iterator and construct the string
+	trkIter = createIterator((List *)list);
+	trk = (Track *)nextElement(&trkIter);
+	int length = 0;
+	length += sprintf(trkListJSON + length, "[");
+	while (trk != NULL) {
+		char* trkJson = trackToJSON(trk);
+		length += sprintf(trkListJSON + length, "%s", trkJson);
+		free(trkJson);
+		trk = (Track *)nextElement(&trkIter);
+		if (trk != NULL) {
+			length += sprintf(trkListJSON + length, ",");
+		}
+	}
+	length += sprintf(trkListJSON + length, "]");
+	return trkListJSON;
 }
 
 char* GPXtoJSON(const GPXdoc* gpx) {
-	return "";
+	if (gpx == NULL) {
+		return "{}";
+	}
+
+	size_t stringLength = snprintf(NULL, 0, "{\"version\":%0.1f,\"creator\":\"%s\",\"numWaypoints\":%d,\"numRoutes\":%d,\"numTracks\":%d}",
+									gpx->version, gpx->creator, getNumWaypoints(gpx), getNumRoutes(gpx), getNumTracks(gpx));
+	char* gpxJson = malloc((stringLength + 1) * sizeof(char));
+	sprintf(gpxJson, "{\"version\":%0.1f,\"creator\":\"%s\",\"numWaypoints\":%d,\"numRoutes\":%d,\"numTracks\":%d}",
+						gpx->version, gpx->creator, getNumWaypoints(gpx), getNumRoutes(gpx), getNumTracks(gpx));
+	return gpxJson;
 }
 
 void addWaypoint(Route *rt, Waypoint *pt) {
+	if (rt == NULL || pt == NULL) {
+		return;
+	}
 
+	insertBack(rt->waypoints, pt);
 }
 
 void addRoute(GPXdoc* doc, Route* rt) {
+	if (doc == NULL || rt == NULL) {
+		return;
+	}
 
+	insertBack(doc->routes, rt);
 }
 
 GPXdoc* JSONtoGPX(const char* gpxString) {
-	return NULL;
+	if (gpxString == NULL) {
+		return NULL;
+	}
+
+	GPXdoc *newDoc = (GPXdoc *)malloc(sizeof(GPXdoc));
+
+	// Initialize all the variables in a GPXdoc
+	strcpy(newDoc->namespace, "http://www.topografix.com/GPX/1/1");
+	newDoc->version = 0.0;
+	newDoc->creator = (char *)malloc(sizeof(char));
+	newDoc->creator[0] = '\0';
+	newDoc->waypoints = initializeList(&waypointToString, &deleteWaypoint, &compareWaypoints);
+	newDoc->routes = initializeList(&routeToString, &deleteRoute, &compareRoutes);
+	newDoc->tracks = initializeList(&trackToString, &deleteTrack, &compareTracks);
+
+	char creator[1024];
+	sscanf(gpxString, "{\"version\":%lf,\"creator\":\"%[^\"]\"}", &newDoc->version, creator);
+	printf("CREATOR: %s\n", creator);
+	newDoc->creator = (char *)realloc(newDoc->creator, strlen(creator) + 1);
+	strcpy(newDoc->creator, creator);
+	return newDoc;
 }
 
 Waypoint* JSONtoWaypoint(const char* gpxString) {
-	return NULL;
+	if (gpxString == NULL) {
+		return NULL;
+	}
+
+	Waypoint* newWpt = (Waypoint *)malloc(sizeof(Waypoint));
+	newWpt->name = (char *)malloc(sizeof(char));
+	newWpt->name[0] = '\0';
+	newWpt->latitude = 0.0;
+	newWpt->longitude = 0.0;
+	newWpt->otherData = initializeList(&gpxDataToString, &deleteGpxData, &compareGpxData);
+
+	sscanf(gpxString, "{\"lat\":%lf,\"lon\":%lf", &newWpt->latitude, &newWpt->longitude);
+	return newWpt;
 }
 
 Route* JSONtoRoute(const char* gpxString) {
-	return NULL;
+	if (gpxString == NULL) {
+		return NULL;
+	}
+
+	Route* newRte = (Route *)malloc(sizeof(Route));
+	newRte->name = (char *)malloc(sizeof(char));
+	newRte->name[0] = '\0';
+	newRte->waypoints = initializeList(&waypointToString, &deleteWaypoint, &compareWaypoints);
+	newRte->otherData = initializeList(&gpxDataToString, &deleteGpxData, &compareGpxData);
+
+	char name[1024];
+	sscanf(gpxString, "{\"name\":\"%[^\"]\"}", name);
+	newRte->name = (char *)realloc(newRte->name, strlen(name) + 1);
+	strcpy(newRte->name, name);
+	return newRte;
 }

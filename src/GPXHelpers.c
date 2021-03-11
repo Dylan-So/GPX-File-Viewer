@@ -515,3 +515,7 @@ float getDistanceDiff(float routeLen, float len) {
         return (len - routeLen);
     }
 }
+
+void deleteNothing(void* toDelete) {
+
+}

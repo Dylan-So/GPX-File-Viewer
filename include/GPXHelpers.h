@@ -113,4 +113,5 @@ void addRteNodes(List* routes, xmlNode* root, xmlNs* namespace);
 void addTrkNodes(List* tracks, xmlNode* root, xmlNs* namespace);
 float getPointDistance(Waypoint *wp1, Waypoint *wp2);
 float getDistanceDiff(float routeLen, float len);
+void deleteNothing(void *);
 #endif
