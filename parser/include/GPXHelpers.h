@@ -61,6 +61,31 @@ Track *getTrackData(xmlNode *curNode);
 TrackSegment *getSegmentData(xmlNode *curNode);
 
 /**
+ * @brief Get the Waypoint List object
+ * 
+ * @param doc 
+ * @return List* 
+ */
+List* getWaypointList(GPXdoc* doc);
+
+/**
+ * @brief Get the Route List object
+ * 
+ * @param doc 
+ * @return List* 
+ */
+List* getRouteList(GPXdoc* doc);
+
+/**
+ * @brief Get the Track List object
+ * 
+ * @param doc 
+ * @return List* 
+ */
+List* getTrackList(GPXdoc* doc);
+
+int getTrkPts(List* list);
+/**
  * @brief Gets the number of elements in a list.
  *
  * @param list The list

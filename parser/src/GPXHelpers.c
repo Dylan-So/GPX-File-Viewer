@@ -213,6 +213,49 @@ TrackSegment *getSegmentData(xmlNode *curNode) {
 
     return newSegment;
 }
+List* getWaypointList(GPXdoc* doc) {
+    if (doc == NULL) {
+        return NULL;
+    } else {
+        return doc->waypoints;
+    }
+}
+
+List* getRouteList(GPXdoc* doc) {
+    if (doc == NULL) {
+        return NULL;
+    } else {
+        return doc->routes;
+    }
+}
+
+List* getTrackList(GPXdoc* doc) {
+    if (doc == NULL) {
+        return NULL;
+    } else {
+        return doc->tracks;
+    }
+}
+
+int getTrkPts(List* list) {
+    if (list != NULL) {
+        int count = 0;
+        ListIterator trkIter = createIterator(list);
+        Track *trk = (Track *)nextElement(&trkIter);
+        while (trk != NULL) {
+            ListIterator trksegIter = createIterator(trk->segments);
+            TrackSegment *trkseg = (TrackSegment *)nextElement(&trksegIter);
+            while (trkseg != NULL) {
+                count += getNumElements(trkseg->waypoints);
+                trkseg = (TrackSegment *)nextElement(&trksegIter);
+            }
+            trk = (Track *)nextElement(&trkIter);
+        }
+        return count;
+    } else {
+        return 0;
+    }
+}
 
 int getNumElements(List *list) {
     if (list != NULL) {

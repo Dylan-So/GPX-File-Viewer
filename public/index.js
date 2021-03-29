@@ -27,14 +27,14 @@ jQuery(document).ready(function() {
         }
     });
 
-    function addFileRow(gpxFile) {
+    function addFileRow(gpxFile, version, creator, numWpt, numRte, numTrk) {
         var filename = encodeURIComponent(gpxFile);
         return "<tr><td><a href=uploads/" + filename +" download>" + gpxFile + "</a></td>"
-        + "<td>Version</td>"
-        + "<td>Creator</td>"
-        + "<td>Waypoints</td>"
-        + "<td>Routes</td>"
-        + "<td>Tracks</td>"
+        + "<td>" + version + "</td>"
+        + "<td>" + creator + "</td>"
+        + "<td>" + numWpt + "</td>"
+        + "<td>" + numRte + "</td>"
+        + "<td>" + numTrk + "</td>"
         + "</tr>";
     }
 
@@ -43,19 +43,38 @@ jQuery(document).ready(function() {
         url:"/getFiles",
         dataType:"json",
         success: function(data) {
-            data.forEach(file => {
+            data.forEach(fileData => {
+                var file = JSON.parse(fileData);
                 $("#fileLog > tbody:last-child")
-                .append($(addFileRow(file)));
+                .append($(addFileRow(file.name, file.version, file.creator, file.numWaypoints, file.numRoutes, file.numTracks)));
                 $("#gpxList")
-                .append("<option value="+ encodeURIComponent(file) + ">" + file + "</option>");
-                console.log("GPX file found: " + file);
+                .append("<option value="+ encodeURIComponent(file.name) + ">" + file.name + "</option>");
+                console.log("GPX file found: " + file.name);
             });
         },
         error: function(error) {
             $("#fileLog")
             .html("<tr><th>No Files</th></tr>");
-            console.log(error.responseText);
+            console.log(error);
         }
+    });
+
+    $("#uploadForm").submit(function(data) {
+        var formData = new FormData($('#uploadForm')[0]);
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(message) {
+                alert(message);
+                console.log("Successfully added " + $('#uploadForm')[0].files.name);
+            },
+            error: function(error) {
+                alert(error.responseText);
+            }
+        })
     });
 
     // Event listener form example , we can use this instead explicitly listening for events
@@ -69,32 +88,73 @@ jQuery(document).ready(function() {
         });
     });
 
-    function addGPXRow(gpxFile, name, numPoints, length, loop) {
-        var filename = encodeURIComponent(gpxFile);
-        return "<tr><td>Route</td>"
+    function addGPXRow(component, name, numPoints, length, loop) {
+        return "<tr><td>" + component + "</td>"
         + "<td>"+ name +"</td>"
         + "<td>"+ numPoints +"</td>"
         + "<td>"+ length +"m</td>"
-        + "<td>"+ loop.toString().toUpperCase() +"</td>"
-        + "<td class=\"notPanel\"><button>+</button></td>"
-        + "</tr>";
+        + "<td>"+ loop +"</td>"
+        + "<td><button class='expandable'>+</button></td>"
+        + "</tr>"
     }
 
+
+    // When a file is selected from list, add it to gpx panel
     $("#gpxList").change(function(selected) {
-        $("#gpxPanel > tbody:last-child")
-        .append($(addGPXRow(this.value, "Random Name", 0, 100, true)));
-    if ($("#hiddenRow").is(":visible")) {
-        $("#hiddenRow").hide();
-    } else {
-        $("#hiddenRow").show();
-    }
-    console.log(decodeURIComponent(this.value));
+        console.log(document.getElementById("gpxList").value);
+        if (!(document.getElementById("gpxList").value.includes("<select a file>"))) {
+            $.ajax({
+                url:"/docInfo",
+                type:"get",
+                data: {
+                    filename:document.getElementById("gpxList").value.toString(),
+                },
+                dataType:'json',
+                success: function(data) {
+                    var i = 1;
+                    $("#gpxPanel").find("tr:gt(0)").remove()
+                    var routes = JSON.parse(data[0]);
+                    routes.forEach(route => {
+                        if ($("#gpxPanel").length > 2) {
+                            $("#gpxPanel")
+                            .append($(addGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
+                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
+                        } else {
+                            $("#gpxPanel")
+                            .append($(addGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
+                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
+                        }
+                        i++;
+                    })
+                    var tracks = JSON.parse(data[1]);
+                    console.log(tracks);
+                    tracks.forEach(track => {
+                        if ($("#gpxPanel").length > 2) {
+                            $("#gpxPanel")
+                            .append($(addGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
+                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
+                        } else {
+                            $("#gpxPanel")
+                            .append($(addGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
+                            .append("<tr style='display:none;'><td>Name</td><td>Track Name</td></tr>")
+                        }
+                        i++;
+                    })
+                },
+                fail: function(error) {
+                    console.log(error);
+                }
+            })
+        }
     })
-    $(".button").click(function(button) {
-        if ($("#hiddenRow").is(":visible")) {
-            $("#hiddenRow").hide();
+
+    $('#gpxPanel').on('click', '.expandable', function(data) {
+        console.log("button pressed");
+        console.log($(this).closest("tr").html());
+        if ($(this).closest("tr").next().is(":visible")) {
+            $(this).closest("tr").next().hide();
         } else {
-            $("#hiddenRow").show();
+            $(this).closest("tr").next().show();
         }
     })
 });

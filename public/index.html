@@ -44,6 +44,7 @@
     <form>
         <label>Choose a file:</label>
         <select name="gpxFiles" id="gpxList">
+            <option>&ltselect a file&gt</option>
         </select>
     </form>
     <div style="overflow:auto;height:200px">
@@ -59,7 +60,6 @@
             </tbody>
         </table>
     </div>
-    <h3 id="hiddenRow" style="display:none;">Hidden Text</h3>
     <hr>
     <form ref='someform'
           id='someform'>
@@ -74,15 +74,12 @@
 
     <form ref='uploadForm'
 		id='uploadForm'
-      action='/upload'
-      method='post'
       encType="multipart/form-data">
       <div class="form-group">
-      	<input type="file" name="uploadFile" class="btn btn-secondary">
+      	<input id="uploadFile" type="file" name="uploadFile" class="btn btn-secondary">
       	<input type='submit' value='Upload' class="btn btn-secondary">
       </div>
-`   </form>
-
+   </form>
     <!-- Leave me at the bottom of body -->
     <script src="/index.js"></script>
 </body>

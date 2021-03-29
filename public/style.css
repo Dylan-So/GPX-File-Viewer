@@ -25,6 +25,10 @@ table {
     margin-right: auto;
 }
 
+.additionalInfo {
+    padding-left: 100px;
+    border-collapse: collapse;
+}
 tr:nth-child(even) {
     background-color: #f2f2f2;
 }
