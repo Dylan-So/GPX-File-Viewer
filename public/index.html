@@ -17,20 +17,14 @@
     <!-- Custom CSS End -->
 </head>
 <body>
-    <h3>Download test</h3>
-    If the A3 stub is running and simple.gpx exists in the uploads/ directory on the server, then clicking on the link below will download it from the server.<br>
-    <p></p>
-    <a href="simple.gpx" download ">simple.gpx</a>
-
-    <hr>
-    <div id="blah">I am blah</div>
     <h3>File Log</h3>
-    <div style="overflow:auto;height:200px;">
+    <hr>
+    <div class='scrollableTable'>
         <table id="fileLog" class="panels">
             <tbody>
                 <tr class="tableText">
                     <th>Filename<br>(click to download)</th>
-                    <th>Verison</th>
+                    <th>Version</th>
                     <th>Creator</th>
                     <th>Number of Waypoints</th>
                     <th>Number of Routes</th>
@@ -39,15 +33,25 @@
             </tbody>
         </table>
     </div>
+    <hr>
     <br>
+    <form ref='uploadForm'
+		id='uploadForm'>
+      <div class="uploadForm">
+      	<input id="uploadFile" type="file" name="uploadFile" class="btn btn-secondary">
+      	<input type='submit' value='Upload' class="btn btn-secondary">
+      </div>
+   </form>
+   <hr>
     <h3>GPX Panel</h3>
+    <hr>
     <form>
         <label>Choose a file:</label>
-        <select name="gpxFiles" id="gpxList">
-            <option>&ltselect a file&gt</option>
+        <select name="gpxFiles" class="fileList" id="gpxList">
+            <option>&ltselect&gt</option>
         </select>
     </form>
-    <div style="overflow:auto;height:200px">
+    <div class="scrollableTable">
         <table id="gpxPanel" class="panels">
             <tbody>
                 <tr>
@@ -61,25 +65,104 @@
         </table>
     </div>
     <hr>
-    <form ref='someform'
-          id='someform'>
-          <div class="form-group">
-                <label for="entryBox">Last Name</label>
-                <input type="text" class="form-control" id="entryBox" value="Value" placeholder="Placeholder">
-          </div>
-        <div class="form-group">
-            <input type='submit' class="btn btn-secondary">
-        </div>
-    </form>
-
-    <form ref='uploadForm'
-		id='uploadForm'
-      encType="multipart/form-data">
-      <div class="form-group">
-      	<input id="uploadFile" type="file" name="uploadFile" class="btn btn-secondary">
-      	<input type='submit' value='Upload' class="btn btn-secondary">
-      </div>
-   </form>
+    <table>
+        <tr>
+            <td>
+                <label>Choose a route/track:</label>
+            </td>
+            <td>
+                <form>
+                    <select name="renameList" id="renameList">
+                        <option>&ltselect&gt</option>
+                    </select>
+                </form>
+            </td>
+            <td>
+                <label for="gpxList">Change Route/Track Name:</label>
+            </td>
+            <td>
+                <form ref='someform'
+                    id='someform'>
+                    <div class="form-group">
+                            <input type="text" class="textBox" id="renameBox" placeholder="Name">
+                    </div>
+                </form>
+            </td>
+            <td>
+                <div class="form-group">
+                    <input type='submit' class="btn btn-secondary" id='submitButton'>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <hr>
+    <h3>Add Route</h3>
+    <hr>
+    <table>
+        <tr>
+            <td>
+                <label>Choose a file:</label>
+                <select name="gpxFiles" class="fileList" id="addRouteList">
+                    <option>&ltselect&gt</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <table>
+        <tr>
+            <td>
+                <form onSubmit='return false;'>
+                    <label>*Name:</label>
+                    <input type="text" class="textBox" id="routeBox" placeholder="Route Name">
+                </form>
+            </td>
+            <td>
+                <form onSubmit='return false;'>
+                    <label>Latitude:</label>
+                    <input type="text" class="textBox" id="latBox" placeholder="Latitude">
+                </form>
+            </td>
+            <td>
+                <form onSubmit='return false;'>
+                    <label>Longitude:</label>
+                    <input type="text" class="textBox" id="lonBox" placeholder="Longitude">
+                </form>
+            </td>
+            <td>
+                <button id="addRoute" type="button" class="btn btn-secondary">Add Route</button>
+            </td>
+        </tr>
+    </table>
+    <hr>
+    <h3>Find Paths Between</h3>
+    <hr>
+    <table>
+        <tr>
+            <td>
+                <form onSubmit='return false;'>
+                    <label>Start Point:</label>
+                    <input type="text" class="textBox" id="startLatBox" placeholder="Latitude">
+                    <input type="text" class="textBox" id="startLonBox" placeholder="Longitude">
+                </form>
+            </td>
+            <td>
+                <form onSubmit='return false;' id="endBox">
+                    <label>End Point:</label>
+                    <input type="text" class="textBox" id="endLatBox" placeholder="Latitude">
+                    <input type="text" class="textBox" id="endLonBox" placeholder="Longitude">
+                </form>
+            </td>
+        </tr>
+    </table>
+    <div style='text-align: center;'>
+        <button id="findPath" type="button" class="btn btn-secondary">Find Path</button>
+    </div>
+    <br>
+    <table class="panels">
+        <tr>
+            <th>&lt;Enter Start and End points&gt;</th>
+        </tr>
+    </table>
     <!-- Leave me at the bottom of body -->
     <script src="/index.js"></script>
 </body>

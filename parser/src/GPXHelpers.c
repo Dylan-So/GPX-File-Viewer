@@ -237,19 +237,14 @@ List* getTrackList(GPXdoc* doc) {
     }
 }
 
-int getTrkPts(List* list) {
-    if (list != NULL) {
+int getTrkPts(const Track* trk) {
+    if (trk != NULL) {
         int count = 0;
-        ListIterator trkIter = createIterator(list);
-        Track *trk = (Track *)nextElement(&trkIter);
-        while (trk != NULL) {
-            ListIterator trksegIter = createIterator(trk->segments);
-            TrackSegment *trkseg = (TrackSegment *)nextElement(&trksegIter);
-            while (trkseg != NULL) {
-                count += getNumElements(trkseg->waypoints);
-                trkseg = (TrackSegment *)nextElement(&trksegIter);
-            }
-            trk = (Track *)nextElement(&trkIter);
+        ListIterator trksegIter = createIterator(trk->segments);
+        TrackSegment *trkseg = (TrackSegment *)nextElement(&trksegIter);
+        while (trkseg != NULL) {
+            count += getNumElements(trkseg->waypoints);
+            trkseg = (TrackSegment *)nextElement(&trksegIter);
         }
         return count;
     } else {
@@ -573,4 +568,100 @@ float getDistanceDiff(float routeLen, float len) {
 
 void deleteNothing(void* toDelete) {
 
+}
+
+char* trkToJSON(const Track *tr) {
+	if (tr == NULL) {
+		return "{}";
+	}
+
+	char* name = tr->name;
+	if (name[0] == '\0') {
+		name = "None";
+	}
+	float trackLen = round10(getTrackLen(tr));
+    int numPoints = getTrkPts(tr);
+	size_t stringLen = 0;
+	char loopBool[6];
+	// Calculate length of string according to whether the track is a loop or not
+	if (isLoopTrack(tr, 10)) {
+		strcpy(loopBool, "true");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"numPoints\":%d,\"loop\":%s}", name, trackLen, numPoints, loopBool);
+	} else {
+		strcpy(loopBool, "false");
+		stringLen = snprintf(NULL, 0, "{\"name\":\"%s\",\"len\":%0.1f,\"numPoints\":%d,\"loop\":%s}", name, trackLen, numPoints, loopBool);
+	}
+	// Allocate enough memory and construct the string
+	char* trkJSON = malloc((stringLen + 1) * sizeof(char));
+	sprintf(trkJSON, "{\"name\":\"%s\",\"len\":%0.1f,\"numPoints\":%d,\"loop\":%s}", name, trackLen, numPoints, loopBool);
+	return trkJSON;
+}
+
+char* trkListToJSON(const List *list) {
+	if (list == NULL) {
+		return "[]";
+	}
+
+	ListIterator trkIter = createIterator((List *)list);
+	Track* trk = (Track *)nextElement(&trkIter);
+	size_t stringLen = snprintf(NULL, 0, "[");
+	// Adds 1 more character for the closing bracket ']' if list is null 
+	if (trk == NULL) {
+		stringLen += 1;
+	}
+	// First loop is responsible for calculating the amount of memory to allocate
+	while (trk != NULL) {
+		char* trkJson = trkToJSON(trk);
+		stringLen += snprintf(NULL, 0, "%s", trkJson);
+		free(trkJson);
+		trk = (Track *)nextElement(&trkIter);
+		if (trk == NULL) {
+			stringLen += snprintf(NULL, 0, "]");
+		} else {
+			stringLen += snprintf(NULL, 0, ",");
+		}
+	}
+	// Second loop is responsible for constructing the string itself, using the trackToJSON() function
+	char *trkListJSON = malloc((stringLen + 1) * sizeof(char));
+	// Reset iterator and construct the string
+	trkIter = createIterator((List *)list);
+	trk = (Track *)nextElement(&trkIter);
+	int length = 0;
+	length += sprintf(trkListJSON + length, "[");
+	while (trk != NULL) {
+		char* trkJson = trkToJSON(trk);
+		length += sprintf(trkListJSON + length, "%s", trkJson);
+		free(trkJson);
+		trk = (Track *)nextElement(&trkIter);
+		if (trk != NULL) {
+			length += sprintf(trkListJSON + length, ",");
+		}
+	}
+	length += sprintf(trkListJSON + length, "]");
+	return trkListJSON;
+}
+
+void setRouteName(Route* rte, char* name) {
+    if (rte != NULL && name != NULL) {
+        rte->name = realloc(rte->name, (strlen(name) + 1) * sizeof(char));
+        strcpy(rte->name, name);
+        rte->name[strlen(name)] = '\0';
+    }
+}
+
+void setTrackName(Track* trk, char* name) {
+    if (trk != NULL && name != NULL) {
+        trk->name = realloc(trk->name, (strlen(name) + 1) * sizeof(char));
+        strcpy(trk->name, name);
+        trk->name[strlen(name)] = '\0';
+    }
+}
+
+bool containsRoute(GPXdoc* doc, char* name) {
+    Route* route = getRoute(doc, name);
+    if (route != NULL) {
+        return true;
+    } else {
+        return false;
+    }
 }

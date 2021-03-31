@@ -13,24 +13,52 @@ body {
     background-color: #FFFFFF;
 }
 
-table {
-    width:100%;
-    height: 70px;
+td {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 100px;
 }
-.panels th,
-.panels td {
+table {
+    width: 100%;
+    height: 70px;
+    table-layout: auto;
+}
+.panels th, 
+.panels tr{
     text-align: center;
-    border: 1px solid black;
+    border:1px solid black;
+    border-collapse: collapse;
     margin-left: auto;
     margin-right: auto;
+    table-layout: fixed;
 }
 
-.additionalInfo {
-    padding-left: 100px;
-    border-collapse: collapse;
+.scrollableTable {
+    overflow:auto;
+    height:200px;
 }
-tr:nth-child(even) {
+
+.panels tr:nth-child(even) {
     background-color: #f2f2f2;
+}
+
+#gpxList {
+    width: auto;
+    overflow: auto;
+}
+
+#renameList {
+    width: 75%;
+    overflow: auto;
+    margin-bottom: 10px;
+}
+
+#endBox {
+    margin-left: 100px;
+}
+
+.textBox {
+    width: auto;
 }
 
 a:link:hover {

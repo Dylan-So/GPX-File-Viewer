@@ -38,49 +38,57 @@ jQuery(document).ready(function() {
         + "</tr>";
     }
 
-    $.ajax({
-        type:"get",
-        url:"/getFiles",
-        dataType:"json",
-        success: function(data) {
-            data.forEach(fileData => {
-                var file = JSON.parse(fileData);
-                $("#fileLog > tbody:last-child")
-                .append($(addFileRow(file.name, file.version, file.creator, file.numWaypoints, file.numRoutes, file.numTracks)));
-                $("#gpxList")
-                .append("<option value="+ encodeURIComponent(file.name) + ">" + file.name + "</option>");
-                console.log("GPX file found: " + file.name);
-            });
-        },
-        error: function(error) {
-            $("#fileLog")
-            .html("<tr><th>No Files</th></tr>");
-            console.log(error);
-        }
-    });
+    function updateFileLog(callback) {
+        $("#fileLog").find("tr:gt(0)").remove()
+        $.ajax({
+            type:"get",
+            url:"/getFiles",
+            dataType:"json",
+            success: callback,
+            error: function(error) {
+                $("#fileLog")
+                .html("<tr><th>&lt;No Files&gt;</th></tr>");
+                console.log(error);
+            }
+        });
+    }
 
-    $("#uploadForm").submit(function(data) {
-        var formData = new FormData($('#uploadForm')[0]);
+    function updateFileTable(data) {
+        data.forEach(fileData => {
+            var file = JSON.parse(fileData);
+            $("#fileLog > tbody:last-child")
+            .append($(addFileRow(file.name, file.version, file.creator, file.numWaypoints, file.numRoutes, file.numTracks)));
+            $(".fileList")
+            .append("<option value="+ encodeURIComponent(file.name) + ">" + file.name + "</option>");
+        });
+    }
+
+    updateFileLog(updateFileTable);
+
+    function uploadFile(formData, callback) {
         $.ajax({
             url: '/upload',
             type: 'POST',
             data: formData,
+            dataType: 'formData',
             contentType: false,
             processData: false,
-            success: function(message) {
-                alert(message);
-                console.log("Successfully added " + $('#uploadForm')[0].files.name);
-            },
-            error: function(error) {
-                alert(error.responseText);
-            }
+            success: callback,
+            fail: callback
+        })
+    }
+    // Uploading a file to server
+    $("#uploadForm").submit(function(data) {
+        var formData = new FormData($('#uploadForm')[0]);
+        uploadFile(formData, function(data) {
+            alert(data.responseText);
         })
     });
 
     // Event listener form example , we can use this instead explicitly listening for events
     // No redirects if possible
     $('#someform').submit(function(e){
-        $('#blah').html("Form has data: "+$('#entryBox').val());
+        $('#blah').html("Form has data: "+$('#routeBox').val());
         e.preventDefault();
         //Pass data to the Ajax call, so it gets passed to the server
         $.ajax({
@@ -88,7 +96,11 @@ jQuery(document).ready(function() {
         });
     });
 
-    function addGPXRow(component, name, numPoints, length, loop) {
+    // Default html for gpxPanel table
+    $("#gpxPanel").html("<tr><td><b>&lt;Select A File&gt;</b></td></tr>");
+
+    // Return html code for a table row
+    function getGPXRow(component, name, numPoints, length, loop) {
         return "<tr><td>" + component + "</td>"
         + "<td>"+ name +"</td>"
         + "<td>"+ numPoints +"</td>"
@@ -98,11 +110,33 @@ jQuery(document).ready(function() {
         + "</tr>"
     }
 
+    // Adds information of a GPX file to GPX Panel table
+    function addGPXRow(data) {
+        console.log("Succuessfully received JSON data");
+        var i = 1;
+        $("#gpxPanel").find("tr:gt(0)").remove()
+        $("#renameList").find("option:gt(0)").remove()
+        var routes = JSON.parse(data[0]);
+        routes.forEach(route => {
+            $("#gpxPanel")
+            .append($(getGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
+            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td><td></td><td></td><td></td><td></td></tr>")
+            $("#renameList").append("<option name='route' value=\"" + route.name + "\">Route "  + i + " - " + route.name + "</option>");
+            i++;
+        })
+        var tracks = JSON.parse(data[1]);
+        i = 1;
+        tracks.forEach(track => {
+            $("#gpxPanel")
+            .append($(getGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
+            .append("<tr style='display:none;' class='hidden'><td>Name</td><td>Track Name</td><td></td><td></td><td></td><td></td></tr>")
+            $("#renameList").append("<option name='track' value=\""+ track.name + "\">Track " + i + " - " + track.name + "</option>");
+            i++;
+        })
+    }
 
-    // When a file is selected from list, add it to gpx panel
-    $("#gpxList").change(function(selected) {
-        console.log(document.getElementById("gpxList").value);
-        if (!(document.getElementById("gpxList").value.includes("<select a file>"))) {
+    function updateGPXPanel() {
+        if (!(document.getElementById("gpxList").value.includes("<select>"))) {
             $.ajax({
                 url:"/docInfo",
                 type:"get",
@@ -111,50 +145,168 @@ jQuery(document).ready(function() {
                 },
                 dataType:'json',
                 success: function(data) {
-                    var i = 1;
-                    $("#gpxPanel").find("tr:gt(0)").remove()
-                    var routes = JSON.parse(data[0]);
-                    routes.forEach(route => {
-                        if ($("#gpxPanel").length > 2) {
-                            $("#gpxPanel")
-                            .append($(addGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
-                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
-                        } else {
-                            $("#gpxPanel")
-                            .append($(addGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
-                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
-                        }
-                        i++;
-                    })
-                    var tracks = JSON.parse(data[1]);
-                    console.log(tracks);
-                    tracks.forEach(track => {
-                        if ($("#gpxPanel").length > 2) {
-                            $("#gpxPanel")
-                            .append($(addGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
-                            .append("<tr style='display:none;'><td>Name</td><td>Route Name</td></tr>")
-                        } else {
-                            $("#gpxPanel")
-                            .append($(addGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
-                            .append("<tr style='display:none;'><td>Name</td><td>Track Name</td></tr>")
-                        }
-                        i++;
-                    })
+                    $("#gpxPanel").html("<tr><th>Component</th><th>Name</th><th>Number of Points</th><th>Length</th><th>Loop</th></tr>");
+                    addGPXRow(data);
                 },
                 fail: function(error) {
-                    console.log(error);
+                    alert(error.responseText);
+                }
+            })
+            
+        } else {
+            $("#gpxPanel").find("tr:gt(0)").remove()
+            $("#renameList").find("option:gt(0)").remove()
+        }
+    }
+    // When a file is selected from list, add it to gpx panel
+    $("#gpxList").change(function() {
+        updateGPXPanel();
+    })
+
+    // Submitting form for renaming route/track
+    $('#submitButton').on('click', function () {
+        var regex = new RegExp("^[a-zA-Z0-9, -]+$");
+        var list =  document.getElementById("renameList");
+        var newName = document.getElementById("renameBox").value;
+        if (!regex.test(newName)) {
+            if (!(newName === "")) {
+                alert("Special Characters are not allowed!");
+                return;
+            }
+        }
+        var oldName = list.value;
+        if (oldName.includes("None")) {
+            oldName = "";
+        }
+        if (newName === oldName) {
+            alert("You are renaming to the same name!");
+            return;
+        }
+        var filename = document.getElementById("gpxList").value;
+        var type = list.options[list.selectedIndex].text;
+        document.getElementById("renameBox").value = "";
+        if (type.includes("Track")) {
+            type = "track";
+        } else {
+            type = "route";
+        }
+        
+        if (!(oldName.includes("<select>") && !(filename.includes("<select>") && !(newName.includes(""))))) {
+            $.ajax({
+                url:'/rename',
+                type:'get',
+                data: {
+                    filename:filename,
+                    newName:newName,
+                    oldName:oldName,
+                    type:type,
+                },
+                success: function (data) {
+                    console.log(data);
+                    addGPXRow(data);
+                    console.log("Successfully renamed " + oldName + " to " + newName);
+                },
+                fail: function(data) {
+                    alert(data);
                 }
             })
         }
+        console.log("button pressed")
+    }) 
+
+    $("button").on('click', function(event) {
+        event.preventDefault();
     })
 
+    // Expands the table row for otherData of a route/track
     $('#gpxPanel').on('click', '.expandable', function(data) {
         console.log("button pressed");
-        console.log($(this).closest("tr").html());
         if ($(this).closest("tr").next().is(":visible")) {
             $(this).closest("tr").next().hide();
         } else {
             $(this).closest("tr").next().show();
         }
+    })
+    
+    function checkRouteExists(filename, routeName, routeExists) {
+        $.ajax({
+            url:'/routeExists',
+            type:'get',
+            data: {
+                filename: filename,
+                routeName: routeName,
+            },
+            dataType:'json',
+            success: routeExists,
+            fail: function(data) {
+                alert(data.responseText);
+            }
+        })
+    }
+
+    function addRoute(filename, routeName, lat, lon, callback) {
+        console.log("2 " + filename);
+        console.log("4 " + routeName);
+        $.ajax({
+            url:'/addRoute',
+            type:'get',
+            data: {
+                filename: filename,
+                routeName: routeName,
+                lat: lat,
+                lon: lon,
+            },
+            success: callback,
+            fail: function(data) {
+                alert(data);
+            }
+        })
+    }
+
+    $('#addRoute').click(function() {
+        var filename = document.getElementById("addRouteList").value.toString();
+        if (filename.includes("<select>")) {
+            alert("Please select a file first");
+            return;
+        }
+        var routeName = document.getElementById("routeBox").value.toString();
+        console.log(routeName);
+        checkRouteExists(filename, routeName, function(result) {
+            var filePath = document.getElementById("addRouteList").value.toString();
+            var rteName = document.getElementById("routeBox").value.toString();
+            var latBox = document.getElementById("latBox").value;
+            var lonBox = document.getElementById("lonBox").value;
+            if (result) {
+                console.log("This route exists");
+                if (latBox === "" && lonBox === "") {
+                    addRoute(filePath, rteName, -1, -1, function () {
+                        updateFileLog(updateFileTable);
+                        if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
+                            updateGPXPanel();
+                        }
+                    });
+                } else if ((latBox === "" && !(lonBox === "")) || (!(latBox === "") && lonBox === "")) {
+                    alert("Both latitude and longitude values are required for new routes!");
+                } else {
+                    addRoute(filePath, rteName, latBox, lonBox, function() {
+                        updateFileLog(updateFileTable);
+                        if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
+                            updateGPXPanel();
+                        }
+                    });
+                }
+            } else {
+                if (latBox === "" || lonBox === "") {
+                    alert("Both latitude and longitude values are required for new routes!");
+                } else {
+                    addRoute(filePath, rteName, latBox, lonBox, function() {
+                        updateFileLog(updateFileTable);
+                        if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
+                            updateGPXPanel();
+                        }
+                    });
+                }
+            }
+        })
     })
 });

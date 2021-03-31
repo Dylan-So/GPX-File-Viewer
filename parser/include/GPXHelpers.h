@@ -84,7 +84,9 @@ List* getRouteList(GPXdoc* doc);
  */
 List* getTrackList(GPXdoc* doc);
 
-int getTrkPts(List* list);
+int getTrkPts(const Track* trk);
+char* trkToJSON(const Track *tr);
+char* trkListToJSON(const List *list);
 /**
  * @brief Gets the number of elements in a list.
  *
@@ -190,4 +192,30 @@ float getDistanceDiff(float routeLen, float len);
  * 
  */
 void deleteNothing(void *);
+
+/**
+ * @brief Set the Route Name object
+ * 
+ * @param rte 
+ * @param name 
+ */
+void setRouteName(Route* rte, char* name);
+
+/**
+ * @brief Set the Track Name object
+ * 
+ * @param rte 
+ * @param name 
+ */
+void setTrackName(Track* rte, char* name);
+
+/**
+ * @brief Check if the GPXdoc contains a route with a certain name
+ * 
+ * @param doc 
+ * @param name 
+ * @return true 
+ * @return false 
+ */
+bool containsRoute(GPXdoc* doc, char* name);
 #endif

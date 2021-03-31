@@ -438,11 +438,20 @@ Route *getRoute(const GPXdoc* doc, char* name) {
 		Route *rte = (Route *)nextElement(&rteIter);
 		// Checks each element for a name matching the key, return a pointer to that Waypoint,
 		// otherwise return NULL
-		while (rte != NULL) {
-			if (strcmp(rte->name, name) == 0) {
-				return rte;
+		if (strcmp(name, "") == 0) {
+			while (rte != NULL) {
+				if (strcmp(rte->name, "") == 0) {
+					return rte;
+				}
+				rte = (Route *)nextElement(&rteIter);
 			}
-			rte = (Route *)nextElement(&rteIter);
+		} else {
+			while (rte != NULL) {
+				if (strcmp(rte->name, name) == 0) {
+					return rte;
+				}
+				rte = (Route *)nextElement(&rteIter);
+			}
 		}
 		return NULL;
 	} else {
