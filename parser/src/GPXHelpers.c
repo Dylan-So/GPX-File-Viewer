@@ -665,3 +665,124 @@ bool containsRoute(GPXdoc* doc, char* name) {
         return false;
     }
 }
+
+char* pathBetweenRteJSON(char* filename, char* schemaFile, Waypoint* sourceWpt, Waypoint* endWpt) {
+    if (filename == NULL || sourceWpt == NULL || endWpt == NULL) {
+        fprintf(stderr, "Route: Null parameters\n");
+        return "[]";
+    }
+
+    GPXdoc* gpxDoc = createValidGPXdoc(filename, schemaFile);
+    if (gpxDoc == NULL) {
+        fprintf(stderr, "Route: Null doc\n");
+        return "[]";
+    }
+
+    List* routes = getRoutesBetween(gpxDoc, sourceWpt->latitude, sourceWpt->longitude, endWpt->latitude, endWpt->longitude, 10.0);
+    char* routesJSON = routeListToJSON(routes);
+    deleteGPXdoc(gpxDoc);
+    return routesJSON;
+}
+
+char* pathBetweenTrkJSON(char* filename, char* schemaFile, Waypoint* sourceWpt, Waypoint* endWpt) {
+    if (filename == NULL || sourceWpt == NULL || endWpt == NULL) {
+        fprintf(stderr, "Track: Null parameters\n");
+        return "[]";
+    }
+
+    GPXdoc* gpxDoc = createValidGPXdoc(filename, schemaFile);
+    if (gpxDoc == NULL) {
+        return "[]";
+    }
+
+    List* tracks = getTracksBetween(gpxDoc, sourceWpt->latitude, sourceWpt->longitude, endWpt->latitude, endWpt->longitude, 10.0);
+    char* tracksJSON = trackListToJSON(tracks);
+    deleteGPXdoc(gpxDoc);
+    return tracksJSON;
+}
+
+char* gpxDataToJSON(GPXData* otherData) {
+    if (otherData == NULL) {
+        fprintf(stderr, "GPX DATA NULL");
+        return "{}";
+    }
+
+    size_t stringLen = 0;
+    stringLen += snprintf(NULL, 0, "{\"name\":\"%s\",\"value\":\"%s\"}", otherData->name, otherData->value);
+
+    char* dataJSON = malloc(stringLen + 1);
+    sprintf(dataJSON, "{\"name\":\"%s\",\"value\":\"%s\"}", otherData->name, otherData->value);
+    return dataJSON;
+}
+
+char* gpxDataListToJSON(void* data, int mode) {
+    if (data == NULL || mode < 0 || mode > 1) {
+        return "[]";
+    }
+
+    if (mode == 1) {
+        Track* track = (Track*)data;
+        ListIterator otherIter = createIterator(track->otherData);
+        GPXData* otherData = (GPXData*)nextElement(&otherIter);
+        size_t stringLen = 2;
+        char* temp;
+        while (otherData != NULL) {
+            temp = gpxDataToJSON(otherData);
+            stringLen += strlen(temp);
+            otherData = (GPXData*)nextElement(&otherIter);
+            if (otherData != NULL) {
+                stringLen += 1;
+            }
+            free(temp);
+        }
+
+        char* dataJSON = malloc(stringLen + 1);
+        otherIter = createIterator(track->otherData);
+        otherData = (GPXData*)nextElement(&otherIter);
+        int length = 0;
+        length += sprintf(dataJSON + length, "[");
+        while(otherData != NULL) {
+            temp = gpxDataToJSON(otherData);
+            length += sprintf(dataJSON + length, "%s", temp);
+            free(temp);
+            otherData = (GPXData*)nextElement(&otherIter);
+            if (otherData != NULL) {
+                length += sprintf(dataJSON + length, ",");
+            }
+        }
+        length += sprintf(dataJSON + length, "]");
+        return dataJSON;
+    } else {
+        Route* track = (Route*)data;
+        ListIterator otherIter = createIterator(track->otherData);
+        GPXData* otherData = (GPXData*)nextElement(&otherIter);
+        size_t stringLen = 2;
+        char* temp;
+        while (otherData != NULL) {
+            temp = gpxDataToJSON(otherData);
+            stringLen += strlen(temp);
+            otherData = (GPXData*)nextElement(&otherIter);
+            if (otherData != NULL) {
+                stringLen += 1;
+            }
+            free(temp);
+        }
+
+        char* dataJSON = malloc(stringLen + 1);
+        otherIter = createIterator(track->otherData);
+        otherData = (GPXData*)nextElement(&otherIter);
+        int length = 0;
+        length += sprintf(dataJSON + length, "[");
+        while(otherData != NULL) {
+            temp = gpxDataToJSON(otherData);
+            length += sprintf(dataJSON + length, "%s", temp);
+            free(temp);
+            otherData = (GPXData*)nextElement(&otherIter);
+            if (otherData != NULL) {
+                length += sprintf(dataJSON + length, ",");
+            }
+        }
+        length += sprintf(dataJSON + length, "]");
+        return dataJSON;
+    }
+}

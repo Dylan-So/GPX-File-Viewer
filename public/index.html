@@ -39,7 +39,7 @@
 		id='uploadForm'>
       <div class="uploadForm">
       	<input id="uploadFile" type="file" name="uploadFile" class="btn btn-secondary">
-      	<input type='submit' value='Upload' class="btn btn-secondary">
+      	<input id="submitUpload" type='submit' value='Upload' class="btn btn-secondary">
       </div>
    </form>
    <hr>
@@ -140,14 +140,14 @@
         <tr>
             <td>
                 <form onSubmit='return false;'>
-                    <label>Start Point:</label>
+                    <label>*Start Point:</label>
                     <input type="text" class="textBox" id="startLatBox" placeholder="Latitude">
                     <input type="text" class="textBox" id="startLonBox" placeholder="Longitude">
                 </form>
             </td>
             <td>
                 <form onSubmit='return false;' id="endBox">
-                    <label>End Point:</label>
+                    <label>*End Point:</label>
                     <input type="text" class="textBox" id="endLatBox" placeholder="Latitude">
                     <input type="text" class="textBox" id="endLonBox" placeholder="Longitude">
                 </form>
@@ -158,11 +158,15 @@
         <button id="findPath" type="button" class="btn btn-secondary">Find Path</button>
     </div>
     <br>
-    <table class="panels">
+    <table class="panels" id="pathTable">
         <tr>
             <th>&lt;Enter Start and End points&gt;</th>
         </tr>
     </table>
+    <br>
+    <br>
+    <br>
+    <br>
     <!-- Leave me at the bottom of body -->
     <script src="/index.js"></script>
 </body>

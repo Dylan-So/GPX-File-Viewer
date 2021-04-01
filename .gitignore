@@ -4,4 +4,5 @@
 *.gpx
 node_modules/
 uploads/
-package-lock.json
+*.o
+*.so

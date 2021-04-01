@@ -54,7 +54,15 @@ table {
 }
 
 #endBox {
-    margin-left: 100px;
+    margin-left: 10px;
+}
+
+#addRoute {
+    margin-top: 30px;
+}
+
+#uploadFile, #submitUpload {
+    margin-bottom: 30px;
 }
 
 .textBox {

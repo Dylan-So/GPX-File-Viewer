@@ -5,7 +5,7 @@ LDFLAGS= -L.
 
 INC = include/
 SRC = src/
-BIN = bin/
+BIN = ../
 PARSER_SRC_FILES = $(wildcard src/GPX*.c)
 PARSER_OBJ_FILES = $(patsubst src/GPX%.c,bin/GPX%.o,$(PARSER_SRC_FILES))
 

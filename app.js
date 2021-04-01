@@ -18,11 +18,12 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 const { SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS } = require('constants');
 const { send } = require('process');
 const { parse } = require('path');
+const { start } = require('repl');
 
 // Important, pass in port as in `npm run dev 1234`, do not change
 const portNum = process.argv[2];
 
-const GPXParser = ffi.Library("./parser/bin/libgpxparser",  {
+const GPXParser = ffi.Library("./libgpxparser",  {
   "createValidGPXdoc": ['void*', ['string', 'string']],
   "GPXtoJSON": ['string', ['void*']],
   "getWaypointList": ['void*', ['void*']],
@@ -43,6 +44,9 @@ const GPXParser = ffi.Library("./parser/bin/libgpxparser",  {
   "JSONtoRoute": ['void*', ['string']],
   "addRoute": ['void', ['void*', 'void*']],
   "addWaypoint": ['void', ['void*', 'void*']],
+  "pathBetweenRteJSON": ['string', ['string', 'string', 'void*', 'void*']],
+  "pathBetweenTrkJSON": ['string', ['string', 'string', 'void*', 'void*']],
+  "gpxDataListToJSON": ['string', ['void*', 'int']]
 });
 
 // Send HTML at root, do not change
@@ -67,13 +71,16 @@ app.get('/index.js',function(req,res){
 
 function removeFile(uploadFile, res) {
   var filePath = 'uploads/' + uploadFile.name;
+  console.log(filePath);
   console.log(uploadFile.name + " not a valid gpx file");
   fs.unlinkSync(filePath, function(err) {
     if (err) {
       return res.status(400).send('Failed to remove gpx file');
     }
+    res.redirect("/");
   })
 }
+
 //Respond to POST requests that upload files to uploads/ directory
 app.post('/upload', function(req, res) {
   if(!req.files) {
@@ -89,7 +96,7 @@ app.post('/upload', function(req, res) {
   } else {
       // Use the mv() method to place the file somewhere on your server
       let validGPX;
-     uploadFile.mv('uploads/' + uploadFile.name, function(err, result) {
+     uploadFile.mv('uploads/' + uploadFile.name, function(err) {
         if(err) {
           return res.status(500).send(err);
         }
@@ -99,11 +106,9 @@ app.post('/upload', function(req, res) {
         GPXParser.deleteGPXdoc(gpxDoc)
         if (!validGPX) {
           removeFile(uploadFile, res);
-          res.status(460).send(uploadFile.name + " is not a valid gpx file!");
-        } else {
-          res.status(200).send("Successfully added " + uploadFile.name);
         }
       });
+      res.redirect("/");
   }
 });
 
@@ -121,7 +126,19 @@ app.get('/uploads/:name', function(req , res){
 });
 
 //******************** Your code goes here ******************** 
-
+app.get("/fileExists", function(req, res) {
+  var uploadFile = req.query.filename;
+  var filePath = "uploads/" + uploadFile;
+  console.log(uploadFile);
+  var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
+  var validGPX = GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd");
+  GPXParser.deleteGPXdoc(GPXdoc);
+  if (validGPX) {
+    res.status(200).send({filename:req.query.filename, exists:true});
+  } else {
+    res.status(200).send({filename:req.query.filename, exists:false});
+  }
+})
 app.get("/getFiles", function(req, res) {
   fs.readdir("uploads/", (err, files) => {
     var fileNames = [];
@@ -150,6 +167,23 @@ app.get("/getFiles", function(req, res) {
     }
   });
 });
+
+app.get("/getOtherData", function(req, res) {
+  var filePath = "uploads/" + req.query.filename;
+  var name = req.query.name.toString();
+  var type = req.query.type.toString();
+  var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
+  var data;
+  var dataJSON;
+  if (type.includes("route")) {
+    data = GPXParser.getRoute(GPXdoc, name);
+    dataJSON = GPXParser.gpxDataListToJSON(data, 0)
+  } else {
+    data = GPXParser.getTrack(GPXdoc, name);
+    dataJSON = GPXParser.gpxDataListToJSON(data, 1);
+  }
+  res.send(dataJSON);
+})
 
 function getJSON(file) {
     var gpxInfo = [];
@@ -241,7 +275,11 @@ app.get('/addRoute', function(req, res) {
     var writeSuccess = GPXParser.writeGPXdoc(GPXdoc, filePath);
     GPXParser.deleteGPXdoc(GPXdoc);
     if (writeSuccess) {
-      res.status(200).send(true);
+      if (containsRoute) {
+        res.status(200).send("Successfully added waypoint to " + routeName);
+      } else {
+        res.status(200).send("Successfully added route: " + routeName);
+      }
     } else {
       res.status(460).send("Failed to write to gpx file");
     }
@@ -251,6 +289,29 @@ app.get('/addRoute', function(req, res) {
   }
 })
 
+app.get("/findPaths", function(req, res) {
+  var filePath = "uploads/" + req.query.filename;
+  var startWpt = req.query.start;
+  var endWpt = req.query.end;
+  
+  startWpt.lat = parseFloat(startWpt.lat);
+  startWpt.lon = parseFloat(startWpt.lon);
+  
+  endWpt.lat = parseFloat(endWpt.lat);
+  endWpt.lon = parseFloat(endWpt.lon);
+  
+  startWpt = GPXParser.JSONtoWaypoint(JSON.stringify(startWpt));
+  endWpt = GPXParser.JSONtoWaypoint(JSON.stringify(endWpt));
+  
+  var routeJSON = GPXParser.pathBetweenRteJSON(filePath, "gpx.xsd", startWpt, endWpt);
+  var trackJSON = GPXParser.pathBetweenTrkJSON(filePath, "gpx.xsd", startWpt, endWpt);
+
+  var pathJSON = [];
+  pathJSON.push(routeJSON);
+  pathJSON.push(trackJSON);
+  console.log(pathJSON);
+  res.status(200).send(pathJSON);
+})
 //Sample endpoint
 app.get('/endpoint1', function(req , res){
   let retStr = req.query.data1 + " " + req.query.data2;

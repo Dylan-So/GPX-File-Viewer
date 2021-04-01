@@ -218,4 +218,43 @@ void setTrackName(Track* rte, char* name);
  * @return false 
  */
 bool containsRoute(GPXdoc* doc, char* name);
+
+/**
+ * @brief Finds routes between source and end point and returns JSON representation
+ * 
+ * @param filename 
+ * @param schemaFile 
+ * @param sourceWpt 
+ * @param endWpt 
+ * @return char* 
+ */
+char* pathBetweenRteJSON(char* filename, char* schemaFile, Waypoint* sourceWpt, Waypoint* endWpt);
+
+/**
+ * @brief Finds tracks between source and end points and returns JSON representation
+ * 
+ * @param filename 
+ * @param schemaFile 
+ * @param sourceWpt 
+ * @param endWpt 
+ * @return char* 
+ */
+char* pathBetweenTrkJSON(char* filename, char* schemaFile, Waypoint* sourceWpt, Waypoint* endWpt);
+
+/**
+ * @brief Returns JSON representation of otherData
+ * 
+ * @param otherData 
+ * @return char* 
+ */
+char* gpxDataToJSON(GPXData* otherData);
+
+/**
+ * @brief Returns JSON representation of otherData of a route or track
+ * 
+ * @param data 
+ * @param mode 
+ * @return char* 
+ */
+char* gpxDataListToJSON(void* data, int mode);
 #endif
