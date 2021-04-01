@@ -71,7 +71,6 @@ app.get('/index.js',function(req,res){
 
 function removeFile(uploadFile, res) {
   var filePath = 'uploads/' + uploadFile.name;
-  console.log(filePath);
   console.log(uploadFile.name + " not a valid gpx file");
   fs.unlinkSync(filePath, function(err) {
     if (err) {
@@ -129,7 +128,6 @@ app.get('/uploads/:name', function(req , res){
 app.get("/fileExists", function(req, res) {
   var uploadFile = req.query.filename;
   var filePath = "uploads/" + uploadFile;
-  console.log(uploadFile);
   var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
   var validGPX = GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd");
   GPXParser.deleteGPXdoc(GPXdoc);
@@ -203,9 +201,7 @@ app.get("/docInfo", function(req, res) {
 
 app.get("/rename", function(req, res) {
     var file = req.query.filename;
-    console.log(file);
     var GPXdoc = GPXParser.createValidGPXdoc("uploads/" + file, "gpx.xsd");
-    console.log(req.query.oldName);
     if (req.query.type.includes("route")) {
       var route = GPXParser.getRoute(GPXdoc, req.query.oldName);
       GPXParser.setRouteName(route, req.query.newName.toString());
@@ -216,7 +212,6 @@ app.get("/rename", function(req, res) {
     var validGPX = GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd");
     if (validGPX) {
       var writeSuccess = GPXParser.writeGPXdoc(GPXdoc, "uploads/" + file);
-      console.log(writeSuccess);
       if (writeSuccess) {
         var gpxInfo = getJSON(file);
         GPXParser.deleteGPXdoc(GPXdoc);
@@ -233,7 +228,6 @@ app.get("/rename", function(req, res) {
 
 app.get("/routeExists", function(req, res) {
   var routeName = req.query.routeName;
-  console.log(routeName);
   var filePath = "uploads/" + req.query.filename.toString();
   var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
   var routeExists = GPXParser.containsRoute(GPXdoc, routeName);
@@ -245,8 +239,6 @@ app.get('/addRoute', function(req, res) {
   var filePath = "uploads/" + req.query.filename;
   var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
   var routeName = req.query.routeName;
-  console.log("1 " + filePath);
-  console.log("2 " + routeName);
   // Convert JSON to Route and Waypoint
   var route;
   var containsRoute = GPXParser.containsRoute(GPXdoc, routeName);
@@ -309,18 +301,8 @@ app.get("/findPaths", function(req, res) {
   var pathJSON = [];
   pathJSON.push(routeJSON);
   pathJSON.push(trackJSON);
-  console.log(pathJSON);
   res.status(200).send(pathJSON);
 })
-//Sample endpoint
-app.get('/endpoint1', function(req , res){
-  let retStr = req.query.data1 + " " + req.query.data2;
-  res.send(
-    {
-      somethingElse: retStr
-    }
-  );
-});
 
 app.listen(portNum);
 console.log('Running app at localhost: ' + portNum);

@@ -706,7 +706,11 @@ char* gpxDataToJSON(GPXData* otherData) {
         fprintf(stderr, "GPX DATA NULL");
         return "{}";
     }
-
+    char* replaceChar = strpbrk(otherData->value, "\n");
+    while(replaceChar != NULL) {
+        *replaceChar = ' ';
+        replaceChar = strpbrk(otherData->value, "\n");
+    }
     size_t stringLen = 0;
     stringLen += snprintf(NULL, 0, "{\"name\":\"%s\",\"value\":\"%s\"}", otherData->name, otherData->value);
 

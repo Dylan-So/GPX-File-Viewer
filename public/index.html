@@ -21,7 +21,7 @@
     <hr>
     <div class='scrollableTable'>
         <table id="fileLog" class="panels">
-            <tbody>
+            <thead>
                 <tr class="tableText">
                     <th>Filename<br>(click to download)</th>
                     <th>Version</th>
@@ -30,6 +30,8 @@
                     <th>Number of Routes</th>
                     <th>Number of Tracks</th>
                 </tr>
+            </thead>
+            <tbody>
             </tbody>
         </table>
     </div>
@@ -52,8 +54,8 @@
         </select>
     </form>
     <div class="scrollableTable">
-        <table id="gpxPanel" class="panels">
-            <tbody>
+        <table id="gpxPanel">
+            <thead>
                 <tr>
                     <th>Component</th>
                     <th>Name</th>
@@ -61,6 +63,8 @@
                     <th>Length</th>
                     <th>Loop</th>
                 </tr>
+            </thead>
+            <tbody>
             </tbody>
         </table>
     </div>
@@ -90,7 +94,7 @@
             </td>
             <td>
                 <div class="form-group">
-                    <input type='submit' class="btn btn-secondary" id='submitButton'>
+                    <button class="btn btn-secondary" id='renameButton'>Rename</button>
                 </div>
             </td>
         </tr>
@@ -112,7 +116,7 @@
         <tr>
             <td>
                 <form onSubmit='return false;'>
-                    <label>*Name:</label>
+                    <label>Name:</label>
                     <input type="text" class="textBox" id="routeBox" placeholder="Route Name">
                 </form>
             </td>
@@ -154,7 +158,7 @@
             </td>
         </tr>
     </table>
-    <div style='text-align: center;'>
+    <div id="pathDiv">
         <button id="findPath" type="button" class="btn btn-secondary">Find Path</button>
     </div>
     <br>

@@ -13,7 +13,10 @@ body {
     background-color: #FFFFFF;
 }
 
-td {
+div {
+    text-align: center;
+}
+.info td, .panels td {
     text-overflow: ellipsis;
     overflow: hidden;
     max-width: 100px;
@@ -38,9 +41,25 @@ table {
     height:200px;
 }
 
-.panels tr:nth-child(even) {
+.panels tr:nth-child(even):not(.info), .data {
     background-color: #f2f2f2;
 }
+
+.info {
+    overflow: visible;
+}
+
+#gpxPanel th, 
+#gpxPanel tr {
+    text-align: center;
+    border:1px solid black;
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    table-layout: fixed;
+}
+
+
 
 #gpxList {
     width: auto;
@@ -58,7 +77,7 @@ table {
 }
 
 #addRoute {
-    margin-top: 30px;
+    margin-bottom: 10px;
 }
 
 #uploadFile, #submitUpload {
