@@ -388,7 +388,7 @@ jQuery(document).ready(function() {
                             .append("<tr style='background-color:#f2f2f2;'><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             var i = 1;
                             routes.forEach(route => {
-                                $('#pathTable tbody').append("<tr style='display:none;'><td>Route " + i + " - " + route.name + "</td><td></td></tr>")
+                                $('#pathTable tbody').append("<tr style='display:none;background-color:#ffffff'><td>Route " + i + " - " + route.name + "</td><td></td></tr>")
                             })
                         }
                         if (message[1] !== "[]") {
@@ -397,12 +397,13 @@ jQuery(document).ready(function() {
                             .append("<tr style='background-color:#f2f2f2;'><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             i = 1;
                             tracks.forEach(track => {
-                                $('#pathTable tbody').append("<tr class=style='display:none;'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
+                                $('#pathTable tbody').append("<tr style='display:none;background-color:#ffffff'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
                             })
                         }
                     }
                 });
             })
+            updateFileTable(data);
         });
     })
 
@@ -452,6 +453,7 @@ jQuery(document).ready(function() {
             })
             alert("Route Count:" + routeCount);
             alert("Track Count:" + trackCount);
+            updateFileTable(data);
         })
     })
 });

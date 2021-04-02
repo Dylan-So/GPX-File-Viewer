@@ -56,10 +56,6 @@ table {
     background-color: #f3f3f3;
 }
 
-.coloredTable tbody tr:last-of-type:not(.info) {
-    border-bottom: 2px solid #009879;
-}
-
 .coloredTable tbody tr.active-row:not(.info) {
     font-weight: bold;
     color: #009879;
