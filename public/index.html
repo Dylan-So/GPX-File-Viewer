@@ -38,7 +38,9 @@
     <hr>
     <br>
     <form ref='uploadForm'
-		id='uploadForm'>
+		id='uploadForm' action='/upload'
+        method='post'
+        encType="multipart/form-data">
       <div class="uploadForm">
       	<input id="uploadFile" type="file" name="uploadFile" class="btn btn-secondary">
       	<input id="submitUpload" type='submit' value='Upload' class="btn btn-secondary">
@@ -90,11 +92,34 @@
             </td>
             <td>
                 <div class="form-group">
-                    <button class="btn btn-secondary" id='renameButton'>Rename</button>
+                    <button class="btn btn-secondary stopRefresh" id='renameButton'>Rename</button>
                 </div>
             </td>
         </tr>
     </table>
+    <hr>
+    <h3>Create GPX File</h3>
+    <hr>
+    <table>
+        <tr>
+            <td>
+                <label>*Filename:</label>
+                <input type="text" class="textBox" id="fileBox" placeholder="Filename">
+            </td>
+            <td>
+                <labeL>*Version:</labeL>
+                <input type="text" class="textBox" id="versionBox" placeholder="Version">
+            </td>
+            <td>
+                <labeL>*Creator:</labeL>
+                <input type="text" class="textBox" id="creatorBox" placeholder="Creator">
+            </td>
+        </tr>
+        </tr>
+    </table>
+    <div>
+        <button class="btn btn-secondary" id='createGPXButton'>Create GPX</button>
+    </div>
     <hr>
     <h3>Add Route</h3>
     <hr>
@@ -129,7 +154,7 @@
                 </form>
             </td>
             <td>
-                <button id="addRoute" type="button" class="btn btn-secondary">Add Route</button>
+                <button id="addRoute" type="button" class="btn btn-secondary stopRefresh">Add Route</button>
             </td>
         </tr>
     </table>
@@ -155,7 +180,7 @@
         </tr>
     </table>
     <div id="pathDiv">
-        <button id="findPath" type="button" class="btn btn-secondary">Find Path</button>
+        <button id="findPath" type="button" class="btn btn-secondary stopRefresh">Find Path</button>
     </div>
     <br>
     <table class="coloredTable" id="pathTable">
@@ -167,6 +192,33 @@
         <tbody>
         </tbody>
     </table>
+    <hr>
+    <h3>Get Number of Routes/Tracks</h3>
+    <hr>
+    <table id='distanceTable'>
+        <tr>
+            <td>
+                <label>Choose Type:</label>
+            </td>
+            <td>
+                <select id="distanceList">
+                    <option>&ltselect&gt</option>
+                    <option>Route</option>
+                    <option>Track</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label>Enter Distance:</label>
+            </td>
+            <td>
+                <input type="text" class="textBox" id="distanceBox" placeholder="Distance(m)">
+                <button type="button" class="btn btn-secondary stopRefresh" id="distanceButton">Submit</button>
+            </td>
+        </tr>
+        <tr></tr>
+    </table>
     <br>
     <br>
     <br>
@@ -175,10 +227,3 @@
     <script src="/index.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-

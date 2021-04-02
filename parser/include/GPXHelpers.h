@@ -257,4 +257,24 @@ char* gpxDataToJSON(GPXData* otherData);
  * @return char* 
  */
 char* gpxDataListToJSON(void* data, int mode);
+
+/**
+ * @brief Get the Routes With Length object
+ * 
+ * @param doc 
+ * @param len 
+ * @param delta 
+ * @return char* 
+ */
+char* getRoutesWithLength(const GPXdoc* doc, float len, float delta);
+
+/**
+ * @brief Get the Tracks With Length object
+ * 
+ * @param doc 
+ * @param len 
+ * @param delta 
+ * @return char* 
+ */
+char* getTracksWithLength(const GPXdoc* doc, float len, float delta);
 #endif

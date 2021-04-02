@@ -39,7 +39,7 @@ xmlExample: $(SRC)libXmlExample.c
 	$(CC) $(CFLAGS) -I$(XML_PATH) $(SRC)libXmlExample.c -lxml2 -o $(BIN)xmlExample
 
 mainTester: parser $(SRC)mainTester.c
-	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) $(BIN)libgpxparser.so $(SRC)mainTester.c -lxml2 -o $(BIN)mainTester
+	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) ../libgpxparser.so $(SRC)mainTester.c -lxml2 -o $(BIN)mainTester
 
 mainTester2: parser $(SRC)mainTester2.c
 	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) $(BIN)libgpxparser.so $(SRC)mainTester2.c -lxml2 -o $(BIN)mainTester2

@@ -46,7 +46,10 @@ const GPXParser = ffi.Library("./libgpxparser",  {
   "addWaypoint": ['void', ['void*', 'void*']],
   "pathBetweenRteJSON": ['string', ['string', 'string', 'void*', 'void*']],
   "pathBetweenTrkJSON": ['string', ['string', 'string', 'void*', 'void*']],
-  "gpxDataListToJSON": ['string', ['void*', 'int']]
+  "gpxDataListToJSON": ['string', ['void*', 'int']],
+  "getRoutesWithLength": ['string', ['void*', 'float', 'float']],
+  "getTracksWithLength": ['string', ['void*', 'float', 'float']],
+  "JSONtoGPX":['void*', ['string']],
 });
 
 // Send HTML at root, do not change
@@ -91,7 +94,7 @@ app.post('/upload', function(req, res) {
     return res.status(400).send('Not a gpx file.');
   }
   if(fs.existsSync('uploads/' + uploadFile.name)) {
-    res.status(460).send('File: ' + uploadFile.name + " already exists on the server!");
+      res.redirect("/");
   } else {
       // Use the mv() method to place the file somewhere on your server
       let validGPX;
@@ -106,8 +109,8 @@ app.post('/upload', function(req, res) {
         if (!validGPX) {
           removeFile(uploadFile, res);
         }
+        res.redirect("/");
       });
-      res.redirect("/");
   }
 });
 
@@ -235,6 +238,30 @@ app.get("/routeExists", function(req, res) {
   res.status(200).send(routeExists);
 })
 
+app.get("/createGPX", function(req, res) {
+  var filePath = "uploads/" + req.query.filename;
+  if (fs.existsSync(filePath)) {
+    res.status(409).send("File already exists on the server!")
+    return;
+  }
+  req.query.gpxInfo.version = parseFloat(req.query.gpxInfo.version);
+  var gpxString = JSON.stringify(req.query.gpxInfo);
+  var GPXdoc = GPXParser.JSONtoGPX(gpxString);
+  var validGPX = GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd");
+  if (!validGPX) {
+    console
+    res.status(460).send("Tried to save an invalid gpx!");
+  } else {
+    var writeSuccess = GPXParser.writeGPXdoc(GPXdoc, filePath);
+    console.log(writeSuccess);
+    if (writeSuccess) {
+      res.status(200).send("Successfully created gpx file");
+    } else {
+      res.status(460).send("Failed to create to gpx file")
+    }
+  }
+})
+
 app.get('/addRoute', function(req, res) {
   var filePath = "uploads/" + req.query.filename;
   var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
@@ -302,6 +329,22 @@ app.get("/findPaths", function(req, res) {
   pathJSON.push(routeJSON);
   pathJSON.push(trackJSON);
   res.status(200).send(pathJSON);
+})
+
+app.get("/getNumDistance", function(req, res) {
+  var type = req.query.type.toString();
+  var distance = parseFloat(req.query.distance);
+  var filePath = "uploads/" + req.query.filename;
+  var routeCount = 0;
+  var trackCount = 0;
+  var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
+  if (type.includes("Route")) {
+    routeCount += (GPXParser.getRoutesWithLength(GPXdoc, distance, 10));
+  } else {
+    trackCount += (GPXParser.getTracksWithLength(GPXdoc, distance, 10));
+  }
+  GPXParser.deleteGPXdoc(GPXdoc);
+  res.status(200).send({route: routeCount, track: trackCount});
 })
 
 app.listen(portNum);

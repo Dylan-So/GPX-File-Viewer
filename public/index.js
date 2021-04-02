@@ -47,47 +47,6 @@ jQuery(document).ready(function() {
         });
     });
 
-    function uploadFile(formData, callback) {
-        $.ajax({
-            url: '/upload',
-            type: 'POST',
-            data: formData,
-            dataType: 'formData',
-            contentType: false,
-            processData: false,
-            success: callback,
-            fail: callback
-        })
-    }
-
-    // Check to see if a file exists on the server
-    // Used for checking if invalid file was removed and display an alert if it was
-    function checkFileExists(filename, callback) {
-        $.ajax({
-            url: '/fileExists',
-            type: 'GET',
-            data: {
-                filename: filename
-            },
-            success: callback,
-        })
-    }
-    // Uploading a file to server
-    $("#uploadForm").submit(function(data) {
-        var formData = new FormData($('#uploadForm')[0]);
-        uploadFile(formData, function(data) {
-            console.log(data.responseText);
-        })
-        checkFileExists(document.getElementById("uploadFile").files[0].name, function(data) {
-            if (data.exists) {
-                alert("Successfully uploaded " + data.filename);
-            } else {
-                console.log(formData);
-                alert(data.filename + " is not a valid gpx file");
-            }
-        }) 
-    });
-
     // Default html for gpxPanel table
     $("#gpxPanel").html("<tr><td><b>&lt;Select A File&gt;</b></td></tr>")
                   .css({"background-color" : "#009879"});
@@ -155,7 +114,7 @@ jQuery(document).ready(function() {
         tracks.forEach(track => {
             $("#gpxPanel tbody")
             .append($(getGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
-            .append("<tr class='info' id='"+ track.name +"' style='display:none;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
+            .append("<tr class='info' id='"+ track.name +"' style='display:none;background-color:#ffffff;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
             getOtherData(filename, "track", track.name, i)
             $("#renameList").append("<option name='track' value=\""+ track.name + "\">Track " + i + " - " + track.name + "</option>");
             i++;
@@ -243,16 +202,13 @@ jQuery(document).ready(function() {
                     addGPXRow(data, filename);
                     console.log("Successfully renamed " + oldName + " to " + newName);
                 },
-                fail: function(data) {
-                    console.log(data);
-                }
             })
         }
     }) 
 
     // Prevents buttons from refreshing page and losing information
     // on other tables
-    $("button").on('click', function(event) {
+    $(".stopRefresh").on('click', function(event) {
         event.preventDefault();
     })
 
@@ -263,6 +219,38 @@ jQuery(document).ready(function() {
         } else {
             $(this).closest("tr").next().show();
         }
+    })
+
+    $('#createGPXButton').on('click', function() {
+        var real = "";
+        var filename = document.getElementById("fileBox").value.toString();
+        var version = document.getElementById("versionBox").value;
+        var creator = document.getElementById("creatorBox").value;
+        if (filename === "" || version === "" || creator === "") {
+            alert("All 3 fields are required to create a gpx file!");
+            return;
+        }
+        if (!(filename.includes(".gpx"))) {
+            real = filename + ".gpx";
+        }
+        var gpxInfo = {};
+        gpxInfo.version = parseFloat(version);
+        gpxInfo.creator = creator;
+        $.ajax({
+            url:'/createGPX',
+            dataType:'json',
+            data: {
+                filename: real,
+                gpxInfo: gpxInfo,
+            },
+            success: function(data) {
+                getFileLog(updateFileTable);
+            },
+            error: function(data) {
+                getFileLog(updateFileTable);
+                alert(data.responseText);
+            },
+        })
     })
     
     // Checks if a route exists in the given file
@@ -293,9 +281,10 @@ jQuery(document).ready(function() {
                 lat: lat,
                 lon: lon,
             },
+            dataType: 'json',
             success: callback,
             fail: function(data) {
-                console.log(data);
+                console.log(data.responseText)
             }
         })
     }
@@ -321,7 +310,7 @@ jQuery(document).ready(function() {
             }
             if (result) {
                 if (latBox === "" && lonBox === "") {
-                    addRoute(filePath, rteName, -1, -1, function (data) {
+                    addRoute(filePath, rteName, -1, -1, function () {
                         getFileLog(updateFileTable);
                         if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
                             updateGPXPanel();
@@ -330,7 +319,7 @@ jQuery(document).ready(function() {
                 } else if ((latBox === "" && !(lonBox === "")) || (!(latBox === "") && lonBox === "")) {
                     alert("Both latitude and longitude values are required for new routes!");
                 } else {
-                    addRoute(filePath, rteName, latBox, lonBox, function(data) { 
+                    addRoute(filePath, rteName, latBox, lonBox, function() { 
                         getFileLog(updateFileTable);
                         if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
                             updateGPXPanel();
@@ -341,7 +330,7 @@ jQuery(document).ready(function() {
                 if (latBox === "" || lonBox === "") {
                     alert("Both latitude and longitude values are required for new routes!");
                 } else {
-                    addRoute(filePath, rteName, latBox, lonBox, function(data) {
+                    addRoute(filePath, rteName, latBox, lonBox, function() {
                         getFileLog(updateFileTable);
                         document.getElementById("addRouteList").value = filename;
                         if (document.getElementById("addRouteList").value === document.getElementById("gpxList").value) {
@@ -396,7 +385,7 @@ jQuery(document).ready(function() {
                         if (message[0] !== "[]") {
                             var routes = JSON.parse(message[0]);
                             $('#pathTable tbody')
-                            .append("<tr><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
+                            .append("<tr style='background-color:#f2f2f2;'><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             var i = 1;
                             routes.forEach(route => {
                                 $('#pathTable tbody').append("<tr style='display:none;'><td>Route " + i + " - " + route.name + "</td><td></td></tr>")
@@ -405,10 +394,10 @@ jQuery(document).ready(function() {
                         if (message[1] !== "[]") {
                             var tracks = JSON.parse(message[1]);
                             $('#pathTable tbody')
-                            .append("<tr><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
+                            .append("<tr style='background-color:#f2f2f2;'><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             i = 1;
                             tracks.forEach(track => {
-                                $('#pathTable tbody').append("<tr style='display:none;'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
+                                $('#pathTable tbody').append("<tr class=style='display:none;'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
                             })
                         }
                     }
@@ -423,5 +412,48 @@ jQuery(document).ready(function() {
         } else {
             $(this).closest("tr").next().show();
         }
+    })
+
+    function getNumDistance(filename, type, distance, callback) {
+        $.ajax({
+            url:'/getNumDistance',
+            type:'GET',
+            dataType:'json',
+            data: {
+                filename: filename,
+                type: type,
+                distance: distance,
+            },
+            success: callback,
+        })
+    }
+
+    var routeCount = 0;
+    var trackCount = 0;
+
+    $("#distanceButton").on('click', function() {
+        var type = document.getElementById("distanceList").value;
+        var distance = document.getElementById("distanceBox").value;
+        if (parseFloat(distance) < 0) {
+            alert("Distance must be positive!");
+            return;
+        }
+        if (type.includes("<select>")) {
+            alert("Enter a distance!");
+            return;
+        }
+        getFileLog(function(data) {
+            data.forEach(file => {
+                var fileObj = JSON.parse(file);
+                getNumDistance(fileObj.name, type, distance, function(data) {
+                    console.log(data);
+                    routeCount += parseInt(data.route);
+                    trackCount += parseInt(data.route);
+                })
+            })
+            setTimeout(function(){return true;},3000);
+            alert("Route Count:" + routeCount);
+            alert("Track Count:" + trackCount);
+        })
     })
 });

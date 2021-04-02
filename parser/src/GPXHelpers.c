@@ -790,3 +790,17 @@ char* gpxDataListToJSON(void* data, int mode) {
         return dataJSON;
     }
 }
+
+char* getRoutesWithLength(const GPXdoc* doc, float len, float delta) {
+    char* count = malloc(100);
+    int intCount = numRoutesWithLength(doc, len , delta);
+    sprintf(count, "%d", intCount);
+    return count;
+}
+
+char* getTracksWithLength(const GPXdoc* doc, float len, float delta) {
+    char* count = malloc(100);
+    int intCount = numTracksWithLength(doc, len , delta);
+    sprintf(count, "%d", intCount);
+    return count;
+}
