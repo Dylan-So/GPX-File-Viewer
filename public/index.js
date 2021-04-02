@@ -21,7 +21,7 @@ jQuery(document).ready(function() {
             success: callback,
             error: function(error) {
                 $("#fileLog")
-                .html("<tr><th>&lt;No Files&gt;</th></tr>");
+                .html("<thead><tr><th>&lt;No Files&gt;</th></tr><thead><tbody></tbody>");
                 console.log(error);
             }
         });
@@ -428,10 +428,9 @@ jQuery(document).ready(function() {
         })
     }
 
-    var routeCount = 0;
-    var trackCount = 0;
-
     $("#distanceButton").on('click', function() {
+        var routeCount = 0;
+        var trackCount = 0;
         var type = document.getElementById("distanceList").value;
         var distance = document.getElementById("distanceBox").value;
         if (parseFloat(distance) < 0) {
@@ -448,10 +447,9 @@ jQuery(document).ready(function() {
                 getNumDistance(fileObj.name, type, distance, function(data) {
                     console.log(data);
                     routeCount += parseInt(data.route);
-                    trackCount += parseInt(data.route);
+                    trackCount += parseInt(data.track);
                 })
             })
-            setTimeout(function(){return true;},3000);
             alert("Route Count:" + routeCount);
             alert("Track Count:" + trackCount);
         })
