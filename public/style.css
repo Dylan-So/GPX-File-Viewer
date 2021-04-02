@@ -16,6 +16,7 @@ body {
 div {
     text-align: center;
 }
+
 .info td, .panels td {
     text-overflow: ellipsis;
     overflow: hidden;
@@ -26,14 +27,42 @@ table {
     height: 70px;
     table-layout: auto;
 }
-.panels th, 
-.panels tr{
-    text-align: center;
-    border:1px solid black;
+.coloredTable {
     border-collapse: collapse;
-    margin-left: auto;
-    margin-right: auto;
-    table-layout: fixed;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.coloredTable thead tr:not(.info) {
+    background-color: #009879;
+    color: #ffffff;
+    text-align: center;
+}
+
+.coloredTable th,
+.coloredTable td {
+    padding: 12px 15px;
+}
+
+.coloredTable tbody tr {
+    border-bottom: thin solid #dddddd;
+}
+
+.coloredTable tbody tr:nth-of-type(even):not(.info) {
+    background-color: #f3f3f3;
+}
+
+.coloredTable tbody tr:last-of-type:not(.info) {
+    border-bottom: 2px solid #009879;
+}
+
+.coloredTable tbody tr.active-row:not(.info) {
+    font-weight: bold;
+    color: #009879;
 }
 
 .scrollableTable {
@@ -48,18 +77,6 @@ table {
 .info {
     overflow: visible;
 }
-
-#gpxPanel th, 
-#gpxPanel tr {
-    text-align: center;
-    border:1px solid black;
-    border-collapse: collapse;
-    margin-left: auto;
-    margin-right: auto;
-    table-layout: fixed;
-}
-
-
 
 #gpxList {
     width: auto;

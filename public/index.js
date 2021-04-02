@@ -89,7 +89,9 @@ jQuery(document).ready(function() {
     });
 
     // Default html for gpxPanel table
-    $("#gpxPanel").html("<tr><td><b>&lt;Select A File&gt;</b></td></tr>");
+    $("#gpxPanel").html("<tr><td><b>&lt;Select A File&gt;</b></td></tr>")
+                  .css({"background-color" : "#009879"});
+    
 
     // Return html code for a table row
     function getGPXRow(component, name, numPoints, length, loop) {
@@ -123,7 +125,7 @@ jQuery(document).ready(function() {
                 if (data.length != 0) {
                     data.forEach(otherData => {
                         otherData.value = otherData.value.replace(/(\r\n|\n|\r)/gm, "");
-                        document.getElementById(name).innerHTML = ("<tr' style=''><td><b>" + otherData.name + "</b></td><td>\"" + otherData.value + "\"</td><td></td><td></td><td></td><td></td></tr>")
+                        document.getElementById(name).innerHTML = ("<tr class='info' style='display:none;background-color:#f2f2f2;'><td><b>" + otherData.name + "</b></td><td>\"" + otherData.value + "\"</td><td></td><td></td><td></td><td></td></tr>")
                     })
                 }
             },
@@ -141,9 +143,9 @@ jQuery(document).ready(function() {
         $("#renameList").find("option:gt(0)").remove()
         var routes = JSON.parse(data[0]);
         routes.forEach(route => {
-            $("#gpxPanel")
+            $("#gpxPanel tbody")
             .append($(getGPXRow("Route " + i, route.name, route.numPoints, route.len, route.loop)))
-            .append("<tr id='"+ route.name +"' style='display:none;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
+            .append("<tr class='info' id='"+ route.name +"' style='display:none;background-color:#ffffff;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
             getOtherData(filename, "route", route.name, i)
             $("#renameList").append("<option name='route' value=\"" + route.name + "\">Route "  + i + " - " + route.name + "</option>");
             i++;
@@ -151,9 +153,9 @@ jQuery(document).ready(function() {
         var tracks = JSON.parse(data[1]);
         i = 1;
         tracks.forEach(track => {
-            $("#gpxPanel")
+            $("#gpxPanel tbody")
             .append($(getGPXRow("Track " + i, track.name, track.numPoints, track.len, track.loop)))
-            .append("<tr id='"+ track.name +"' style='display:none;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
+            .append("<tr class='info' id='"+ track.name +"' style='display:none;'><td></td><td><b>N/A</b></td><td></td><td></td><td></td><td></td></tr>");
             getOtherData(filename, "track", track.name, i)
             $("#renameList").append("<option name='track' value=\""+ track.name + "\">Track " + i + " - " + track.name + "</option>");
             i++;
@@ -171,7 +173,7 @@ jQuery(document).ready(function() {
                 },
                 dataType:'json',
                 success: function(data) {
-                    $("#gpxPanel").html("<tr><th>Component</th><th>Name</th><th>Number of Points</th><th>Length</th><th>Loop</th></tr>");
+                    $("#gpxPanel").html("<thead><tr><th>Component</th><th>Name</th><th>Number of Points</th><th>Length</th><th>Loop</th></tr></thead><tbody></tbody>");
                     addGPXRow(data, document.getElementById("gpxList").value.toString());
                     $('#gpxPanel tr').each(function (i, row) {
                         if ($(row).hasClass("data")) {
@@ -385,7 +387,7 @@ jQuery(document).ready(function() {
             alert("Latitude cannot be less than -90 or greater than 90\nLongitude cannot be less than -180 or greater than 180");
             return;
         }
-        $("#pathTable").html("<tr><th>Files</th></tr>")
+        $("#pathTable").html("<thead><tr><th>Files</th><th></th></tr><thead><tbody></tbody>")
         getFileLog(function(data) {
             data.forEach(file => {
                 var fileObj = JSON.parse(file);
@@ -393,20 +395,20 @@ jQuery(document).ready(function() {
                     if (message[0] !== "[]" ^ message[1] !== "[]") {
                         if (message[0] !== "[]") {
                             var routes = JSON.parse(message[0]);
-                            $('#pathTable')
+                            $('#pathTable tbody')
                             .append("<tr><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             var i = 1;
                             routes.forEach(route => {
-                                $('#pathTable').append("<tr style='display:none;'><td>Route " + i + " - " + route.name + "</td><td></td></tr>")
+                                $('#pathTable tbody').append("<tr style='display:none;'><td>Route " + i + " - " + route.name + "</td><td></td></tr>")
                             })
                         }
                         if (message[1] !== "[]") {
                             var tracks = JSON.parse(message[1]);
-                            $('#pathTable')
+                            $('#pathTable tbody')
                             .append("<tr><td>" + fileObj.name + "</td><td><button class='expandable'>+</button></td></tr>")
                             i = 1;
                             tracks.forEach(track => {
-                                $('#pathTable').append("<tr style='display:none;'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
+                                $('#pathTable tbody').append("<tr style='display:none;'><td>Track " + i + " - " + track.name + "</td><td></td></tr>")
                             })
                         }
                     }

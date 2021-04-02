@@ -20,7 +20,7 @@
     <h3>File Log</h3>
     <hr>
     <div class='scrollableTable'>
-        <table id="fileLog" class="panels">
+        <table id="fileLog" class="coloredTable">
             <thead>
                 <tr class="tableText">
                     <th>Filename<br>(click to download)</th>
@@ -54,14 +54,10 @@
         </select>
     </form>
     <div class="scrollableTable">
-        <table id="gpxPanel">
+        <table id="gpxPanel" class="coloredTable">
             <thead>
                 <tr>
-                    <th>Component</th>
-                    <th>Name</th>
-                    <th>Number of Points</th>
-                    <th>Length</th>
-                    <th>Loop</th>
+                    <th>&ltSelect A File&gt</th>
                 </tr>
             </thead>
             <tbody>
@@ -162,10 +158,14 @@
         <button id="findPath" type="button" class="btn btn-secondary">Find Path</button>
     </div>
     <br>
-    <table class="panels" id="pathTable">
-        <tr>
-            <th>&lt;Enter Start and End points&gt;</th>
-        </tr>
+    <table class="coloredTable" id="pathTable">
+        <thead>
+            <tr>
+                <th>&lt;Enter Start and End points&gt;</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
     </table>
     <br>
     <br>
