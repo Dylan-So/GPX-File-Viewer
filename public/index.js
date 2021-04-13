@@ -456,4 +456,40 @@ jQuery(document).ready(function() {
             updateFileTable(data);
         })
     })
+
+    $('#loginButton').on('click', function(){
+        var hostname = document.getElementById("hostname").value;
+        var username = document.getElementById("username").value;
+        var password = document.getElementById("password").value;
+        var database = document.getElementById("database").value;
+        if (hostname === "" || username === "" || password === "" || database === "") {
+            alert("Invalid Login Information");
+            return;
+        } else {
+            $("#logoutButton").show();
+            let dbConf = {
+                host     : hostname.toString(),
+                user     : username.toString(),
+                password : password.toString(),
+                database : database.toString()
+            };
+            console.log(dbConf);
+            $.ajax({
+                url: "/login",
+                type: "GET",
+                dataType: "json",
+                data: {
+                    "dbConf": dbConf
+                },
+                success: function(data) {
+                    alert("Successfully logged in");
+                }
+            })
+        }
+    })
+
+    $("#logoutButton").on('click', function() {
+        $("#logoutButton").hide();
+        alert("Logged out");
+    })
 });

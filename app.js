@@ -19,6 +19,9 @@ const { SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS } = require('constants');
 const { send } = require('process');
 const { parse } = require('path');
 const { start } = require('repl');
+const mysql = require('mysql2/promise');
+let connection;
+let fileTable = "CREATE TABLE IF NOT EXISTS FILE (gpx_id INT AUTO_INCREMENT, file_name VARCHAR(60) NOT NULL, ver DECIMAL(2,1) NOT NULL, creator VARCHAR(256) NOT NULL)";
 
 // Important, pass in port as in `npm run dev 1234`, do not change
 const portNum = process.argv[2];
@@ -345,6 +348,23 @@ app.get("/getNumDistance", function(req, res) {
   }
   GPXParser.deleteGPXdoc(GPXdoc);
   res.status(200).send({route: routeCount, track: trackCount});
+})
+
+app.get("/login", async function(req, res) {
+  var login = true;
+  try {
+    console.log(req.query.dbConf);
+    connection = await mysql.createConnection(req.query.dbConf);
+    connection = await connection.execute(fileTable);
+  } catch(e) {
+    console.log("Query error: " + e);
+    login = false;
+  }
+  if (login) {
+    res.status(200).send("Success");
+  } else {
+    res.status(400).send("Failed to login")
+  }
 })
 
 app.listen(portNum);
