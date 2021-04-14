@@ -220,7 +220,7 @@
         <tr></tr>
     </table>
     <br>
-    <h3>Database</h3>
+    <h3>A4 - Database</h3>
     <hr>
     <table>
         <tbody>
@@ -243,7 +243,7 @@
                     <input id='username' type='text' name='username' placeholder='username'>
                 </td>
                 <td>
-                    <button id="clearDataButton">Clear Database</button>
+                    <button id="clearDataButton" style="display: none;">Clear Database</button>
                 </td>
             </tr>
             <tr>
@@ -276,7 +276,7 @@
             </tr>
         </tbody>
     </table>
-    <div id="queries" style='display:none; text-align: left;'>
+    <div id="queries" style='text-align: left;'>
         <h3>All Routes</h3>
         <hr>
         <table>
@@ -349,6 +349,7 @@
                     <td><b>Route ID</b></td>
                     <td><b>Route Name</b></td>
                     <td><b>Route Length</b></td>
+                    <td><b>Filename</b></td>
                     <td><b>GPX ID</b></td>
                 </tr>
             </thead>
@@ -399,7 +400,6 @@
                 </tr>
             </thead>
             <tbody>
-
             </tbody>
         </table>
         <br>
@@ -421,7 +421,8 @@
                     <label>Sort By:</label>
                     <select id='sortFilePointList' style="margin-left: 10px;">
                         <option>&ltselect&gt</option>
-                        <option>Index</option>
+                        <option>Route Name</option>
+                        <option>Route Length</option>
                     </select>
                     <label style="margin-left: 10px;">Order:</label>
                     <select id='filePointOrder' style="margin-left: 10px;">
@@ -441,7 +442,63 @@
                     <td><b>Latitude</b></td>
                     <td><b>Longitude</b></td>
                     <td><b>Point Name</b></td>
+                    <td><b>Route Name</b></td>
+                    <td><b>Route Length</b></td>
                     <td><b>Route ID</b></td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <br>
+        <br>
+        <br>
+        <h3>Shortest/Longest Routes</h3>
+        <hr>
+        <table>
+            <tr>
+                <td>
+                    <label>Select A Type:</label>
+                    <select id='routeLengthList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Shortest</option>
+                        <option>Longest</option>
+                    </select>
+                    <label style="margin-left: 10px;">Select A File:</label>
+                    <select id='fileRouteLengthList' class='fileList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                    </select>
+                    <label style="margin-left: 10px;">Routes to Display:</label>
+                    <input id="numRoutesDisplay" type="text" placeholder="# of routes">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Sort By:</label>
+                    <select id='sortRouteLengthList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Route Name</option>
+                        <option>Route Length</option>
+                    </select>
+                    <label style="margin-left: 10px;">Order:</label>
+                    <select id='routeLengthOrder' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+                    <button id="updateQuery5Btn" style="margin-left: 10px;">Update Table</button>
+                </td>
+            </tr>
+        </table>
+        <table id='routeLengthTable' class='coloredTable'>
+            <thead>
+                <tr>
+                    <td><b>Route ID</b></td>
+                    <td><b>Route Name</b></td>
+                    <td><b>Route Length</b></td>
+                    <td><b>Filename</b></td>
+                    <td><b>GPX ID</b></td>
                 </tr>
             </thead>
             <tbody>

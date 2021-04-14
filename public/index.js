@@ -23,7 +23,6 @@ jQuery(document).ready(function() {
                 $("#fileLog")
                 .html("<thead><tr><th>&lt;No Files&gt;</th></tr><thead><tbody></tbody>");
                 $("#storeFilesButton").hide();
-                $("#clearDataButton").hide();
                 console.log(error);
             }
         });
@@ -34,20 +33,23 @@ jQuery(document).ready(function() {
             var file = JSON.parse(fileData);
             $("#fileLog > tbody:last-child")
             .append($(addFileRow(file.name, file.version, file.creator, file.numWaypoints, file.numRoutes, file.numTracks)));
+            var exists = false;
+            $(".fileList option").each(function() {
+                if (this.value.includes(file.name)) {
+                    exists = true;
+                    return;
+                }
+            })
+            if (!exists) {
+                $(".fileList")
+                .append("<option value="+ encodeURIComponent(file.name) + ">" + file.name + "</option>");
+            }
         });
     }
 
     // Updates file panel with information about the files in the server
     // ALso updates all the file lists on the page
-    getFileLog(function(data) {
-        data.forEach(fileData => {
-            var file = JSON.parse(fileData);
-            $("#fileLog > tbody:last-child")
-            .append($(addFileRow(file.name, file.version, file.creator, file.numWaypoints, file.numRoutes, file.numTracks)));
-            $(".fileList")
-            .append("<option value="+ encodeURIComponent(file.name) + ">" + file.name + "</option>");
-        });
-    });
+    getFileLog(updateFileTable);
 
     // Default html for gpxPanel table
     $("#gpxPanel").html("<tr><td><b>&lt;Select A File&gt;</b></td></tr>")
@@ -299,7 +301,7 @@ jQuery(document).ready(function() {
     // Event Listener for adding a route
     // Checks if route exists to see if it should add waypoints to a route or
     // create a new route
-    $('#addRoute').click(function() {
+    $('#addRoute').on('click', function() {
         var filename = document.getElementById("addRouteList").value.toString();
         if (filename.includes("<select>")) {
             alert("Please select a file first");
@@ -323,6 +325,7 @@ jQuery(document).ready(function() {
                             updateGPXPanel();
                         }
                     });
+                    alert("Added route");
                 } else if ((latBox === "" && !(lonBox === "")) || (!(latBox === "") && lonBox === "")) {
                     alert("Both latitude and longitude values are required for new routes!");
                 } else {
@@ -332,6 +335,7 @@ jQuery(document).ready(function() {
                             updateGPXPanel();
                         }
                     });
+                    alert("Added route");
                 }
             } else {
                 if (latBox === "" || lonBox === "") {
@@ -344,10 +348,8 @@ jQuery(document).ready(function() {
                             updateGPXPanel();
                         }
                     });
+                    alert("Added Route");
                 }
-            }
-            if (rteName !== "", latBox !== "", lonBox !== "") {
-                alert(data);
             }
         })
     })
@@ -492,8 +494,10 @@ jQuery(document).ready(function() {
                     if (data.login) {
                         loggedIn = true;
                         var countObj = data.count;
+                        if (countObj.fileCount > 0 || countObj.routeCount > 0 || countObj.pointCount > 0) {
+                            $("#clearDataButton").show();
+                        }
                         alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
-                        $("#queries").show();
                     } else {
                         alert("Invalid Login");
                     }
@@ -520,7 +524,6 @@ jQuery(document).ready(function() {
             type:'GET',
             success: function(data) {
                 alert("Logged out");
-                $("#queries").hide();
             }
         })
     })
@@ -532,6 +535,9 @@ jQuery(document).ready(function() {
             success: function (data) {
                 if (data.success) {
                     var countObj = data.count;
+                    if (countObj.fileCount > 0 || countObj.routeCount > 0 || countObj.pointCount > 0) {
+                        $("#clearDataButton").show();
+                    }
                     alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
                     $.ajax({
                         url:'/getAllRoutes',
@@ -557,6 +563,7 @@ jQuery(document).ready(function() {
             type:'POST',
             success: function(data) {
                 alert(data);
+                $("#clearDataButton").hide();
             }
         })
     })
@@ -566,7 +573,6 @@ jQuery(document).ready(function() {
         type:'GET',
         success: function(data) {
             if (data) {
-                $("#queries").show();
                 $("#logoutButton").show();
             }
         }
@@ -580,7 +586,6 @@ jQuery(document).ready(function() {
                 console.log(data);
                 if (data.success) {
                     var countObj = data.count;
-                    console.log(data.count);
                     alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
                 } else {
                     alert(data.responseText);
@@ -589,7 +594,20 @@ jQuery(document).ready(function() {
         })
     })
 
-    function getAllRoutes(rows, sortBy, order, tableName) {
+    $.ajax({
+        url:'/getDBStatus',
+        type:'GET',
+        success: function(data) {
+            if (data.success) {
+                var countObj = data.count;
+                if (countObj.fileCount > 0 || countObj.routeCount > 0 || countObj.pointCount > 0) {
+                    $("#clearDataButton").show();
+                }
+            }
+        }
+    })
+
+    function getAllRoutes(rows, sortBy, order, tableName, filename) {
         if (sortBy.includes("Name")) {
             rows.sort(function(a, b) {
                 if (a.route_name < b.route_name) {
@@ -620,7 +638,11 @@ jQuery(document).ready(function() {
         $(".routeList").html("<select><option>&ltselect&gt</option></select>");
         rows.forEach(row => {
             if (tableName !== "") {
-                $("#" + tableName + " tbody").append("<tr><td>" + row.route_id + "</td><td>" + row.route_name + "</td><td>" + row.route_len + "</td><td>" + row.gpx_id + "</td></tr>")
+                if (filename === "") {
+                    $("#" + tableName + " tbody").append("<tr><td>" + row.route_id + "</td><td>" + row.route_name + "</td><td>" + row.route_len + "</td><td>" + row.gpx_id + "</td></tr>")
+                } else {
+                    $("#" + tableName + " tbody").append("<tr><td>" + row.route_id + "</td><td>" + row.route_name + "</td><td>" + row.route_len + "</td><td>" + filename + "</td><td>" + row.gpx_id + "</td></tr>")
+                }
             }
             $(".routeList").append("<option>" + row.route_name + "</option>");
         })
@@ -634,7 +656,7 @@ jQuery(document).ready(function() {
             type:'GET',
             success: function (data) {
                 if (data.success){
-                    getAllRoutes(data.routes, sortBy, order, "allRoutesTable");
+                    getAllRoutes(data.routes, sortBy, order, "allRoutesTable", "");
                 } else {
                     alert(data.responseText);
                 }
@@ -659,7 +681,7 @@ jQuery(document).ready(function() {
             },
             success: function (data) {
                 if (data.success){
-                    getAllRoutes(data.routes, sortBy, order, "fileRoutesTable");
+                    getAllRoutes(data.routes, sortBy, order, "fileRoutesTable", filename);
                 } else {
                     alert(data.responseText);
                 }
@@ -667,13 +689,23 @@ jQuery(document).ready(function() {
         })
     })
 
-    function getAllPoints(rows, sortBy, order, tableName) {
-        if (sortBy.includes("Index")) {
+    function getAllPoints(rows, sortBy, order, tableName, includeRteName) {
+        if (sortBy.includes("Route Name")) {
             rows.sort(function(a, b) {
                 if (a.route_name < b.route_name) {
                     return -1;
                 }
                 if (a.route_name > b.route_name) {
+                    return 1;
+                }
+                return 0;
+            })
+        } else if (sortBy.includes("Route Length")) {
+            rows.sort(function(a, b) {
+                if (a.route_len < b.route_len) {
+                    return -1;
+                }
+                if (a.route_len > b.route_len) {
                     return 1;
                 }
                 return 0;
@@ -687,7 +719,11 @@ jQuery(document).ready(function() {
         }
         rows.forEach(row => {
             if (tableName !== "") {
-                $("#" + tableName + " tbody").append("<tr><td>" + row.point_id + "</td><td>" + row.point_index + "</td><td>" + row.latitude + "</td><td>" + row.longitude + "</td><td>" + row.point_name + "</td><td>" + row.route_id + "</td></tr>")
+                if (includeRteName == false) {
+                    $("#" + tableName + " tbody").append("<tr><td>" + row.point_id + "</td><td>" + row.point_index + "</td><td>" + row.latitude + "</td><td>" + row.longitude + "</td><td>" + row.point_name + "</td><td>" + row.route_id + "</td></tr>")
+                } else {
+                    $("#" + tableName + " tbody").append("<tr><td>" + row.point_id + "</td><td>" + row.point_index + "</td><td>" + row.latitude + "</td><td>" + row.longitude + "</td><td>" + row.point_name + "</td><td>" + row.route_name + "</td><td>" + row.route_len + "</td><td>" + row.route_id + "</td></tr>")
+                }
             }
         })
     }
@@ -710,7 +746,7 @@ jQuery(document).ready(function() {
             success: function (data) {
                 console.log(data);
                 if (data.success){
-                    getAllPoints(data.points, sortBy, order, "routePointTable");
+                    getAllPoints(data.points, sortBy, order, "routePointTable", false);
                 } else {
                     alert(data.responseText);
                 }
@@ -736,7 +772,45 @@ jQuery(document).ready(function() {
             success: function (data) {
                 console.log(data);
                 if (data.success){
-                    getAllPoints(data.points, sortBy, order, "filePointTable");
+                    getAllPoints(data.points, sortBy, order, "filePointTable", true);
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    $("#updateQuery5Btn").on('click', function() {
+        var filename = document.getElementById("fileRouteLengthList").value;
+        if (filename.includes("<select>")) {
+            alert("Please select a file first");
+            return;
+        }
+        var type = document.getElementById("routeLengthList").value;
+        if (type.includes("<select>")) {
+            alert("Please select shortest/longest");
+            return;
+        }
+        var numRoutes = document.getElementById("numRoutesDisplay").value;
+        if (numRoutes === "" || isNaN(numRoutes) || parseInt(numRoutes) < 0) {
+            alert("Invalid Number of Routes");
+            return;
+        }
+        var sortBy = document.getElementById("sortRouteLengthList").value;
+        var order = document.getElementById("routeLengthOrder").value;
+        $.ajax({
+            url:'/getRoutesByLength',
+            type:'GET',
+            dataType:'json',
+            data: {
+                "filename": filename,
+                "type": type,
+                "numRoutes": numRoutes,
+            },
+            success: function (data) {
+                console.log(data);
+                if (data.success){
+                    getAllRoutes(data.routes, sortBy, order, "routeLengthTable", filename);
                 } else {
                     alert(data.responseText);
                 }

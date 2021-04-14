@@ -90,7 +90,7 @@ function removeFile(uploadFile, res) {
 }
 
 //Respond to POST requests that upload files to uploads/ directory
-app.post('/upload', function(req, res) {
+app.post('/upload', async function(req, res) {
   if(!req.files) {
     return res.status(400).send('No files were uploaded.');
   }
@@ -149,7 +149,7 @@ app.get("/fileExists", function(req, res) {
 
 
 app.get("/getFiles", function(req, res) {
-  fs.readdir("uploads/", (err, files) => {
+  fs.readdir("uploads/", async (err, files) => {
     var fileNames = [];
     if (err) {
       console.log(err);
@@ -168,10 +168,22 @@ app.get("/getFiles", function(req, res) {
         }
       })
       if (fileNames == "") {
-        getFiles()
         return res.status(404).send("error: Failed to find .gpx files in uploads/");
       } else {
-        getFiles();
+        if (connection != null) {
+          try {
+            var [fileRow, testFields] = await connection.execute("SHOW TABLES LIKE 'FILE';")
+            if (fileRow.length != 0) {
+              await connection.execute("DELETE FROM FILE;");
+              await connection.execute("ALTER TABLE FILE AUTO_INCREMENT = 1;");
+              await connection.execute("ALTER TABLE POINT AUTO_INCREMENT = 1;");
+              await connection.execute("ALTER TABLE ROUTE AUTO_INCREMENT = 1;");
+            }
+          } catch (e) {
+            console.log("Query Error: " + e)
+          }
+          getFiles();
+        }
         res.contentType('json');
         res.send(fileNames);
       }
@@ -272,18 +284,29 @@ app.get("/createGPX", async function(req, res) {
   req.query.gpxInfo.version = parseFloat(req.query.gpxInfo.version);
   var gpxString = req.query.gpxInfo;
   if (connection != null) {
-    let insertFile = "INSERT INTO FILE(file_name, ver, creator) VALUES('" + req.query.filename + "','" + gpxString.version + "','" + gpxString.creator + "');";
-    await connection.execute(insertFile);
+    var fileExists = false;
+    try {
+      var [rows1, fields1] = await connection.execute("SELECT * FROM FILE;");
+      for (var row of rows1) {
+        if (file.toString() === row.file_name) {
+          fileExists = true;
+        }
+      }
+    } catch (e) {
+      console.log("Query Error: " + e);
+    }
+    if (!fileExists) {
+      let insertFile = "INSERT INTO FILE(file_name, ver, creator) VALUES('" + req.query.filename + "','" + gpxString.version + "','" + gpxString.creator + "');";
+      await connection.execute(insertFile);
+    }
   }
   gpxString = JSON.stringify(gpxString);
   var GPXdoc = GPXParser.JSONtoGPX(gpxString);
   var validGPX = GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd");
   if (!validGPX) {
-    console
     res.status(460).send("Tried to save an invalid gpx!");
   } else {
     var writeSuccess = GPXParser.writeGPXdoc(GPXdoc, filePath);
-    console.log(writeSuccess);
     if (writeSuccess) {
       res.status(200).send("Successfully created gpx file");
     } else {
@@ -292,7 +315,7 @@ app.get("/createGPX", async function(req, res) {
   }
 })
 
-app.get('/addRoute', function(req, res) {
+app.get('/addRoute', async function(req, res) {
   var filePath = "uploads/" + req.query.filename;
   var GPXdoc = GPXParser.createValidGPXdoc(filePath, "gpx.xsd");
   var routeName = req.query.routeName;
@@ -327,7 +350,20 @@ app.get('/addRoute', function(req, res) {
     var writeSuccess = GPXParser.writeGPXdoc(GPXdoc, filePath);
     GPXParser.deleteGPXdoc(GPXdoc);
     if (writeSuccess) {
-      getFiles()
+      if (connection != null) {
+        try {
+          var [fileRow, testFields] = await connection.execute("SHOW TABLES LIKE 'FILE';")
+          if (fileRow.length != 0) {
+            await connection.execute("DELETE FROM FILE;");
+            await connection.execute("ALTER TABLE FILE AUTO_INCREMENT = 1;");
+            await connection.execute("ALTER TABLE POINT AUTO_INCREMENT = 1;");
+            await connection.execute("ALTER TABLE ROUTE AUTO_INCREMENT = 1;");
+          }
+        } catch (e) {
+          console.log("Query Error: " + e)
+        }
+        getFiles();
+      }
       if (containsRoute) {
         res.status(200).send("Successfully added waypoint to " + routeName);
       } else {
@@ -413,7 +449,6 @@ app.get("/login", async function(req, res) {
     await connection.execute(fileTable);
     await connection.execute(routeTable);
     await connection.execute(pointTable);
-    getFiles();
   } catch(e) {
     console.log("Query error: " + e);
     connection = null;
@@ -442,85 +477,91 @@ app.get("/logout", async function(req, res) {
   res.send("Logged out");
 })
 
-function getFiles() {
-fs.readdir("uploads/", (err, files) => {
-    if (err) {
-      console.log(err);
-    } else {
-      files.forEach(async file => {
-        if (file.includes(".gpx")) {
-          var GPXdoc = GPXParser.createValidGPXdoc("uploads/" + file.toString(), "gpx.xsd");
-          if (GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd")) {
-            var GPXdocJSON = GPXParser.GPXtoJSON(GPXdoc);
-            var gpxObject = JSON.parse(GPXdocJSON);
-            gpxObject.name = file.toString();
-            GPXdocJSON = JSON.stringify(gpxObject);
-            if (connection != null) {
-              var fileExists = false;
-              try {
-                var [rows1, fields1] = await connection.execute("SELECT * FROM FILE;");
-                for (var row of rows1) {
-                  if (file.toString() === row.file_name) {
-                    fileExists = true;
-                  }
-                }
-              } catch (e) {
-                console.log("Query Error: " + e);
-              }
-              if (fileExists == false) {
-                try {
-                  let insertFile = "INSERT INTO FILE(file_name, ver, creator) VALUES('" + file.toString() + "','" + gpxObject.version + "','" + gpxObject.creator + "');";
-                  var fileId;
+async function getFiles() {
+  if (connection != null) {
+    fs.readdir("uploads/", (err, files) => {
+        if (err) {
+          console.log(err);
+        } else {
+          files.forEach(async file => {
+            if (file.includes(".gpx")) {
+              var GPXdoc = GPXParser.createValidGPXdoc("uploads/" + file.toString(), "gpx.xsd");
+              if (GPXParser.validateGPXDoc(GPXdoc, "gpx.xsd")) {
+                var GPXdocJSON = GPXParser.GPXtoJSON(GPXdoc);
+                var gpxObject = JSON.parse(GPXdocJSON);
+                gpxObject.name = file.toString();
+                GPXdocJSON = JSON.stringify(gpxObject);
+                if (connection != null) {
+                  var fileExists = false;
                   try {
-                    fileId = await connection.query(insertFile);
+                    var [rows1, fields1] = await connection.execute("SELECT * FROM FILE;");
+                    for (var row of rows1) {
+                      if (file.toString() === row.file_name) {
+                        fileExists = true;
+                      }
+                    }
                   } catch (e) {
                     console.log("Query Error: " + e);
                   }
-                  var gpxInfo = getJSON(file);
-                  var routes = JSON.parse(gpxInfo[0]);
-                  fileId = fileId[0].insertId;
-                  routes.forEach(async route => {
-                    let insertRoute = "INSERT INTO ROUTE(route_name, route_len, gpx_id) VALUES('" + route.name + "','" + route.len + "','" + fileId + "');";
-                    if (route.name.includes("None")) {
-                      route.name = "";
-                    }
-                    var gpxRoute = GPXParser.getRoute(GPXdoc, route.name);
-                    var wptArray = GPXParser.getJSONWaypoints(gpxRoute);
-                    var routeId;
+                  if (fileExists == false) {
                     try {
-                      routeId = await connection.query(insertRoute);
-                    } catch (e) {
-                      console.log("Query Error: " + e);
-                    }
-                    var i = 0;
-                    wptArray = JSON.parse(wptArray);
-                    routeId = routeId[0].insertId;
-                    console.log(routeId);
-                    wptArray.forEach(async wpt => {
-                      var wptName = "NULL";
-                      if (wpt.name !== "") {
-                        wptName = wpt.name;
-                      }
-                      let insertWpt = "INSERT INTO POINT(point_index, latitude, longitude, point_name, route_id) VALUES(" + i + ",'" + wpt.lat + "','" + wpt.lon + "','" + wptName + "','" + routeId + "');";
-                      i++;
+                      let insertFile = "INSERT INTO FILE(file_name, ver, creator) VALUES('" + file.toString() + "','" + gpxObject.version + "','" + gpxObject.creator + "');";
+                      var fileId;
                       try {
-                        await connection.execute(insertWpt);
+                        fileId = await connection.query(insertFile);
                       } catch (e) {
                         console.log("Query Error: " + e);
                       }
-                    })
-                  })
-                  GPXParser.deleteGPXdoc(GPXdoc);
-                } catch (e) {
-                  console.log("Query Error: " + e);
+                      var gpxInfo = getJSON(file);
+                      var routes = JSON.parse(gpxInfo[0]);
+                      fileId = fileId[0].insertId;
+                      var unnamedNum = 1;
+                      routes.forEach(async route => {
+                        if (route.name.includes("None")) {
+                          route.name = "Unnamed Route " + unnamedNum;
+                          unnamedNum++;
+                        }
+                        let insertRoute = "INSERT INTO ROUTE(route_name, route_len, gpx_id) VALUES('" + route.name + "','" + route.len + "','" + fileId + "');";
+                        if (route.name.includes("Unnamed")) {
+                          route.name = "";
+                        }
+                        var gpxRoute = GPXParser.getRoute(GPXdoc, route.name);
+                        var wptArray = GPXParser.getJSONWaypoints(gpxRoute);
+                        var routeId;
+                        try {
+                          routeId = await connection.query(insertRoute);
+                        } catch (e) {
+                          console.log("Query Error: " + e);
+                        }
+                        var i = 0;
+                        wptArray = JSON.parse(wptArray);
+                        routeId = routeId[0].insertId;
+                        wptArray.forEach(async wpt => {
+                          var wptName = "NULL";
+                          if (wpt.name !== "") {
+                            wptName = wpt.name;
+                          }
+                          let insertWpt = "INSERT INTO POINT(point_index, latitude, longitude, point_name, route_id) VALUES(" + i + ",'" + wpt.lat + "','" + wpt.lon + "','" + wptName + "','" + routeId + "');";
+                          i++;
+                          try {
+                            await connection.execute(insertWpt);
+                          } catch (e) {
+                            console.log("Query Error: " + e);
+                          }
+                        })
+                      })
+                      GPXParser.deleteGPXdoc(GPXdoc);
+                    } catch (e) {
+                      console.log("Query Error: " + e);
+                    }
+                  }
                 }
               }
             }
-          }
+          })
         }
-      })
-    }
-  });
+      });
+  }
 }
 
 app.get("/storeFiles", async function(req, res) {
@@ -528,12 +569,26 @@ app.get("/storeFiles", async function(req, res) {
     res.send({'success':false, 'responseText':'Please login first'});
   } else {
     try {
+      try {
+        var [fileRow, testFields] = await connection.execute("SHOW TABLES LIKE 'FILE';")
+        if (fileRow.length != 0) {
+          await connection.execute("DELETE FROM FILE;");
+          await connection.execute("ALTER TABLE FILE AUTO_INCREMENT = 1;");
+          await connection.execute("ALTER TABLE POINT AUTO_INCREMENT = 1;");
+          await connection.execute("ALTER TABLE ROUTE AUTO_INCREMENT = 1;");
+        }
+      } catch (e) {
+        console.log("Query Error: " + e)
+      }
       getFiles();
+      await connection.execute("SELECT COUNT(*) FROM ROUTE");
+      await connection.execute("SELECT COUNT(*) FROM POINT");
     } catch (e) {
       console.log("Query Error: " + e);
+    } finally {
+      var countObj = await getDBStatus();
+      res.status(200).send({'count': countObj, 'success': true});
     }
-    var countObj = await getDBStatus();
-    res.status(200).send({'success': true, 'count': countObj});
   }
 })
 
@@ -632,8 +687,16 @@ app.get("/getPointsFromFile", async function(req, res) {
       var [rteRows, rteFields] = await connection.execute(getRoutes);
       for (var row of rteRows) {
         var getPoints = "SELECT * FROM POINT WHERE route_id = " + row.route_id + ";";
+        var getRteName = "SELECT route_name FROM ROUTE WHERE route_id = " + row.route_id + ";";
+        var getRteLength = "SELECT route_len FROM ROUTE WHERE route_id = " + row.route_id + ";";
+        var [rteLenRow, rteLenFields] = await connection.execute(getRteLength);
+        var rteLen = rteLenRow[0].route_len;
+        var [rteNameRow, rteNameFields] = await connection.execute(getRteName);
+        var rteName = rteNameRow[0].route_name;
         var [pointRows, pointFields] = await connection.execute(getPoints);
         for (var pointRow of pointRows) {
+          pointRow.route_name = rteName;
+          pointRow.route_len = rteLen;
           points.push(pointRow);
         }
       }
@@ -645,5 +708,32 @@ app.get("/getPointsFromFile", async function(req, res) {
     res.send({'success':false, 'responseText':'Please login first'});
   }
 })
+
+app.get("/getRoutesByLength", async function(req, res) {
+  if (connection != null) {
+    var rows = [];
+    try {
+      var getGPXId = "SELECT gpx_id FROM FILE WHERE file_name = '" + req.query.filename + "';";
+      var [gpxIdRows, gpxIdFields] = await connection.execute(getGPXId);
+      var gpxId = gpxIdRows[0].gpx_id;
+      var getRoutes;
+      if (req.query.type.includes("Shortest")) {
+        getRoutes = "SELECT * FROM ROUTE WHERE gpx_id = " + gpxId + " ORDER BY route_len ASC limit " + req.query.numRoutes + ";"
+      } else {
+        getRoutes = "SELECT * FROM ROUTE WHERE gpx_id = " + gpxId + " ORDER BY route_len DESC limit " + req.query.numRoutes + ";";
+      }
+      var [rteRows, rteFields] = await connection.execute(getRoutes);
+      for (var row of rteRows) {
+        rows.push(row);
+      }
+    } catch (e) {
+      console.log("Query Error " + e);
+    }
+    res.send({'success':true, 'routes':rows});
+  } else {
+    res.send({'success':false, 'responseText':'Please login first'});
+  }
+})
+
 app.listen(portNum);
 console.log('Running app at localhost: ' + portNum);
