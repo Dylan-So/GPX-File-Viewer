@@ -22,6 +22,8 @@ jQuery(document).ready(function() {
             error: function(error) {
                 $("#fileLog")
                 .html("<thead><tr><th>&lt;No Files&gt;</th></tr><thead><tbody></tbody>");
+                $("#storeFilesButton").hide();
+                $("#clearDataButton").hide();
                 console.log(error);
             }
         });
@@ -232,6 +234,8 @@ jQuery(document).ready(function() {
         }
         if (!(filename.includes(".gpx"))) {
             real = filename + ".gpx";
+        } else {
+            real = filename;
         }
         var gpxInfo = {};
         gpxInfo.version = parseFloat(version);
@@ -245,12 +249,15 @@ jQuery(document).ready(function() {
             },
             success: function(data) {
                 getFileLog(updateFileTable);
+                alert(data.responseText);
             },
             error: function(data) {
                 getFileLog(updateFileTable);
                 alert(data.responseText);
             },
         })
+        $("#storeFilesButton").show();
+        $("#clearDataButton").show();
     })
     
     // Checks if a route exists in the given file
@@ -457,6 +464,7 @@ jQuery(document).ready(function() {
         })
     })
 
+    var loggedIn = false;
     $('#loginButton').on('click', function(){
         var hostname = document.getElementById("hostname").value;
         var username = document.getElementById("username").value;
@@ -473,7 +481,6 @@ jQuery(document).ready(function() {
                 password : password.toString(),
                 database : database.toString()
             };
-            console.log(dbConf);
             $.ajax({
                 url: "/login",
                 type: "GET",
@@ -482,14 +489,83 @@ jQuery(document).ready(function() {
                     "dbConf": dbConf
                 },
                 success: function(data) {
-                    alert("Successfully logged in");
+                    if (data.login) {
+                        loggedIn = true;
+                        var countObj = data.count;
+                        alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                    } else {
+                        alert("Invalid Login");
+                    }
                 }
             })
         }
     })
-
+    
     $("#logoutButton").on('click', function() {
         $("#logoutButton").hide();
-        alert("Logged out");
+        $.ajax({
+            url:'/logout',
+            type:'GET',
+            success: function(data) {
+                alert("Logged out");
+            }
+        })
+    })
+
+    $("#storeFilesButton").on('click', function() {
+        if (loggedIn == false) {
+            alert("Please login first");
+            return;
+        }
+
+        $.ajax({
+            url: '/storeFiles',
+            type: 'GET',
+            success: function (data) {
+                if (data.success) {
+                    var countObj = data.count;
+                    alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    $("#clearDataButton").on('click', function() {
+        $.ajax({
+            url:'/clearData',
+            type:'POST',
+            success: function(data) {
+                alert(data);
+            }
+        })
+    })
+
+    $.ajax({
+        url:'/checkLoginStatus',
+        type:'GET',
+        success: function(data) {
+            if (data) {
+                $("#logoutButton").show();
+            }
+        }
+    })
+
+    $("#dbStatusButton").on('click', function() {
+        $.ajax({
+            url:'/getDBStatus',
+            type:'GET',
+            success: function(data) {
+                console.log(data);
+                if (data.success) {
+                    var countObj = data.count;
+                    console.log(data.count);
+                    alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
     })
 });

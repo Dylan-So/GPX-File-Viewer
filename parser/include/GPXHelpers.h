@@ -277,4 +277,7 @@ char* getRoutesWithLength(const GPXdoc* doc, float len, float delta);
  * @return char* 
  */
 char* getTracksWithLength(const GPXdoc* doc, float len, float delta);
+
+char* waypointToJSON(Waypoint* wpt);
+char* getJSONWaypoints(Route* rte);
 #endif

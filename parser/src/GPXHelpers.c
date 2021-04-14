@@ -804,3 +804,51 @@ char* getTracksWithLength(const GPXdoc* doc, float len, float delta) {
     sprintf(count, "%d", intCount);
     return count;
 }
+
+char* waypointToJSON(Waypoint* wpt) {
+    if (wpt == NULL) {
+        return "{}";
+    }
+
+    size_t stringLength = snprintf(NULL, 0, "{\"name\":\"%s\",\"lat\":%f,\"lon\":%f}", wpt->name, wpt->latitude, wpt->longitude);
+    char* wptJSON = malloc(stringLength + 1);
+    sprintf(wptJSON, "{\"name\":\"%s\",\"lat\":%f,\"lon\":%f}", wpt->name, wpt->latitude, wpt->longitude);
+    wptJSON[stringLength] = '\0';
+    return wptJSON;
+}
+
+char* getJSONWaypoints(Route* rte) {
+    if (rte == NULL) {
+        return "[]";
+    }
+
+    ListIterator wptIter = createIterator(rte->waypoints);
+    Waypoint* wpt = (Waypoint*)nextElement(&wptIter);
+    size_t stringLen = 2;
+    while (wpt != NULL) {
+        char* temp = waypointToJSON(wpt);
+        stringLen += strlen(temp);
+        wpt = (Waypoint*)nextElement(&wptIter);
+        if (wpt != NULL) {
+            stringLen += 1;
+        }
+        free(temp);
+    }
+
+    char* wptJSON = malloc(stringLen + 1);
+    wptIter = createIterator(rte->waypoints);
+    wpt = (Waypoint*)nextElement(&wptIter);
+    int length = 0;
+    length += sprintf(wptJSON + length, "[");
+    while (wpt != NULL) {
+        char* temp = waypointToJSON(wpt);
+        length += sprintf(wptJSON + length, "%s", temp);
+        wpt = (Waypoint*)nextElement(&wptIter);
+        if (wpt != NULL) {
+            length += sprintf(wptJSON + length, ",");
+        }
+    }
+    length += sprintf(wptJSON + length, "]");
+    wptJSON[stringLen] = '\0';
+    return wptJSON;
+}
