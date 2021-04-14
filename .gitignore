@@ -6,3 +6,5 @@ node_modules/
 uploads/
 *.o
 *.so
+mainTester
+mainTester.c
