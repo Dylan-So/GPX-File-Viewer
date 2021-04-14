@@ -465,7 +465,7 @@ jQuery(document).ready(function() {
     })
 
     var loggedIn = false;
-    $('#loginButton').on('click', function(){
+    $('#loginButton').on('click', async function(){
         var hostname = document.getElementById("hostname").value;
         var username = document.getElementById("username").value;
         var password = document.getElementById("password").value;
@@ -481,7 +481,7 @@ jQuery(document).ready(function() {
                 password : password.toString(),
                 database : database.toString()
             };
-            $.ajax({
+            await $.ajax({
                 url: "/login",
                 type: "GET",
                 dataType: "json",
@@ -493,8 +493,20 @@ jQuery(document).ready(function() {
                         loggedIn = true;
                         var countObj = data.count;
                         alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                        $("#queries").show();
                     } else {
                         alert("Invalid Login");
+                    }
+                }
+            })
+            $.ajax({
+                url:'/getAllRoutes',
+                type:'GET',
+                success: function (data) {
+                    if (data.success){
+                        getAllRoutes(data.routes, "", "", "");
+                    } else {
+                        alert(data.responseText);
                     }
                 }
             })
@@ -508,23 +520,30 @@ jQuery(document).ready(function() {
             type:'GET',
             success: function(data) {
                 alert("Logged out");
+                $("#queries").hide();
             }
         })
     })
 
-    $("#storeFilesButton").on('click', function() {
-        if (loggedIn == false) {
-            alert("Please login first");
-            return;
-        }
-
-        $.ajax({
+    $("#storeFilesButton").on('click', async function() {
+        await $.ajax({
             url: '/storeFiles',
             type: 'GET',
             success: function (data) {
                 if (data.success) {
                     var countObj = data.count;
                     alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                    $.ajax({
+                        url:'/getAllRoutes',
+                        type:'GET',
+                        success: function (data) {
+                            if (data.success){
+                                getAllRoutes(data.routes, "", "", "");
+                            } else {
+                                alert(data.responseText);
+                            }
+                        }
+                    })
                 } else {
                     alert(data.responseText);
                 }
@@ -547,6 +566,7 @@ jQuery(document).ready(function() {
         type:'GET',
         success: function(data) {
             if (data) {
+                $("#queries").show();
                 $("#logoutButton").show();
             }
         }
@@ -562,6 +582,161 @@ jQuery(document).ready(function() {
                     var countObj = data.count;
                     console.log(data.count);
                     alert("Database has " + countObj.fileCount + " files, " + countObj.routeCount + " routes, and " + countObj.pointCount + " points");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    function getAllRoutes(rows, sortBy, order, tableName) {
+        if (sortBy.includes("Name")) {
+            rows.sort(function(a, b) {
+                if (a.route_name < b.route_name) {
+                    return -1;
+                }
+                if (a.route_name > b.route_name) {
+                    return 1;
+                }
+                return 0;
+            })
+        } else if (sortBy.includes("Route Length")) {
+            rows.sort(function(a, b) {
+                if (a.route_len < b.route_len) {
+                    return -1;
+                }
+                if (a.route_len > b.route_len) {
+                    return 1;
+                }
+                return 0;
+            })
+        }
+        if (order.includes("Descending")) {
+            rows.reverse();
+        }
+        if (tableName !== "") {
+            $("#" + tableName + " tbody").html("")
+        }
+        $(".routeList").html("<select><option>&ltselect&gt</option></select>");
+        rows.forEach(row => {
+            if (tableName !== "") {
+                $("#" + tableName + " tbody").append("<tr><td>" + row.route_id + "</td><td>" + row.route_name + "</td><td>" + row.route_len + "</td><td>" + row.gpx_id + "</td></tr>")
+            }
+            $(".routeList").append("<option>" + row.route_name + "</option>");
+        })
+    }
+
+    $("#updateQuery1Btn").on('click', function() {
+        var sortBy = document.getElementById("sortRoutes").value;
+        var order = document.getElementById("routeOrder").value;
+        $.ajax({
+            url:'/getAllRoutes',
+            type:'GET',
+            success: function (data) {
+                if (data.success){
+                    getAllRoutes(data.routes, sortBy, order, "allRoutesTable");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    $("#updateQuery2Btn").on('click', function() {
+        var filename = document.getElementById("fileRouteList").value;
+        if (filename.includes("<select>")) {
+            alert("Please select a file first");
+            return;
+        }
+        var sortBy = document.getElementById("sortFileRoute").value;
+        var order = document.getElementById("fileRouteOrder").value;
+        $.ajax({
+            url:'/getRoutesFromFile',
+            type:'GET',
+            dataType:'json',
+            data: {
+                "filename": filename.toString(),
+            },
+            success: function (data) {
+                if (data.success){
+                    getAllRoutes(data.routes, sortBy, order, "fileRoutesTable");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    function getAllPoints(rows, sortBy, order, tableName) {
+        if (sortBy.includes("Index")) {
+            rows.sort(function(a, b) {
+                if (a.route_name < b.route_name) {
+                    return -1;
+                }
+                if (a.route_name > b.route_name) {
+                    return 1;
+                }
+                return 0;
+            })
+        }
+        if (order.includes("Descending")) {
+            rows.reverse();
+        }
+        if (tableName !== "") {
+            $("#" + tableName + " tbody").html("")
+        }
+        rows.forEach(row => {
+            if (tableName !== "") {
+                $("#" + tableName + " tbody").append("<tr><td>" + row.point_id + "</td><td>" + row.point_index + "</td><td>" + row.latitude + "</td><td>" + row.longitude + "</td><td>" + row.point_name + "</td><td>" + row.route_id + "</td></tr>")
+            }
+        })
+    }
+
+    $("#updateQuery3Btn").on('click', function() {
+        var routeName = document.getElementById("routePointList").value;
+        if (routeName.includes("<select>")) {
+            alert("Please select a route first");
+            return;
+        }
+        var sortBy = document.getElementById("sortRoutePointList").value;
+        var order = document.getElementById("routePointOrder").value;
+        $.ajax({
+            url:'/getPointsFromRoute',
+            type:'GET',
+            dataType:'json',
+            data: {
+                "routeName": routeName.toString(),
+            },
+            success: function (data) {
+                console.log(data);
+                if (data.success){
+                    getAllPoints(data.points, sortBy, order, "routePointTable");
+                } else {
+                    alert(data.responseText);
+                }
+            }
+        })
+    })
+
+    $("#updateQuery4Btn").on('click', function() {
+        var filename = document.getElementById("filePointList").value;
+        if (filename.includes("<select>")) {
+            alert("Please select a route first");
+            return;
+        }
+        var sortBy = document.getElementById("sortFilePointList").value;
+        var order = document.getElementById("filePointOrder").value;
+        $.ajax({
+            url:'/getPointsFromFile',
+            type:'GET',
+            dataType:'json',
+            data: {
+                "filename": filename.toString(),
+            },
+            success: function (data) {
+                console.log(data);
+                if (data.success){
+                    getAllPoints(data.points, sortBy, order, "filePointTable");
                 } else {
                     alert(data.responseText);
                 }

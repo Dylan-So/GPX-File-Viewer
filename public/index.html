@@ -232,7 +232,7 @@
                     <input id='hostname' type='text' name='hostname' placeholder='hostname'>
                 </td>
                 <td>
-                    <button id="storeFilesButton">Store Files</button>
+                    <button id="storeFilesButton">Store Files/Update Database</button>
                 </td>
             </tr>
             <tr>
@@ -276,6 +276,179 @@
             </tr>
         </tbody>
     </table>
+    <div id="queries" style='display:none; text-align: left;'>
+        <h3>All Routes</h3>
+        <hr>
+        <table>
+            <tr>
+                <td>
+                    <label>Sort By:</label>
+                    <select id='sortRoutes' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Name</option>
+                        <option>Route Length</option>
+                    </select>
+                    <label style="margin-left: 10px;">Order:</label>
+                    <select id='routeOrder' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+                    <button id="updateQuery1Btn" style="margin-left: 10px;">Update Table</button>
+                </td>
+            </tr>
+        </table>
+        <table id='allRoutesTable' class='coloredTable'>
+            <thead>
+                <tr>
+                    <td><b>Route ID</b></td>
+                    <td><b>Route Name</b></td>
+                    <td><b>Route Length</b></td>
+                    <td><b>GPX ID</b></td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <br>
+        <br>
+        <br>
+        <h3>Routes from a Specific File</h3>
+        <hr>
+        <table>
+            <tr>
+                <td>
+                    <label>Select A File:</label>
+                    <select id='fileRouteList' class='fileList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Sort By:</label>
+                    <select id='sortFileRoute' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Name</option>
+                        <option>Route Length</option>
+                    </select>
+                    <label style="margin-left: 10px;">Order:</label>
+                    <select id='fileRouteOrder' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+                    <button id="updateQuery2Btn" style="margin-left: 10px;">Update Table</button>
+                </td>
+            </tr>
+        </table>
+        <table id='fileRoutesTable' class='coloredTable'>
+            <thead>
+                <tr>
+                    <td><b>Route ID</b></td>
+                    <td><b>Route Name</b></td>
+                    <td><b>Route Length</b></td>
+                    <td><b>GPX ID</b></td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <br>
+        <br>
+        <br>
+        <h3>Points of a Specific Route</h3>
+        <hr>
+        <table>
+            <tr>
+                <td>
+                    <label>Select A Route:</label>
+                    <select id='routePointList' class='routeList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Sort By:</label>
+                    <select id='sortRoutePointList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Index</option>
+                    </select>
+                    <label style="margin-left: 10px;">Order:</label>
+                    <select id='routePointOrder' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+                    <button id="updateQuery3Btn" style="margin-left: 10px;">Update Table</button>
+                </td>
+            </tr>
+        </table>
+        <table id='routePointTable' class='coloredTable'>
+            <thead>
+                <tr>
+                    <td><b>Point ID</b></td>
+                    <td><b>Point Index</b></td>
+                    <td><b>Latitude</b></td>
+                    <td><b>Longitude</b></td>
+                    <td><b>Point Name</b></td>
+                    <td><b>Route ID</b></td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <br>
+        <br>
+        <br>
+        <h3>Points of a Specific File</h3>
+        <hr>
+        <table>
+            <tr>
+                <td>
+                    <label>Select A File:</label>
+                    <select id='filePointList' class='fileList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Sort By:</label>
+                    <select id='sortFilePointList' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Index</option>
+                    </select>
+                    <label style="margin-left: 10px;">Order:</label>
+                    <select id='filePointOrder' style="margin-left: 10px;">
+                        <option>&ltselect&gt</option>
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+                    <button id="updateQuery4Btn" style="margin-left: 10px;">Update Table</button>
+                </td>
+            </tr>
+        </table>
+        <table id='filePointTable' class='coloredTable'>
+            <thead>
+                <tr>
+                    <td><b>Point ID</b></td>
+                    <td><b>Point Index</b></td>
+                    <td><b>Latitude</b></td>
+                    <td><b>Longitude</b></td>
+                    <td><b>Point Name</b></td>
+                    <td><b>Route ID</b></td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </div>
     <br>
     <br>
     <br>
